@@ -68,15 +68,44 @@ class YouTubeService:
                                     id=channel_id,
                                     name=entry.get("channel", entry.get("uploader", "Unknown")),
                                     url=f"https://www.youtube.com/channel/{channel_id}/videos",
-                                    subscriber_count=sub_count if isinstance(sub_count, int) else 0,
-                                    subscriber_count_str=self._format_count(sub_count),
+                                    subscriber_count=sub_count if isinstance(sub_count, int) else None,
+                                    subscriber_count_str=self._format_count(sub_count) if sub_count else None,
                                     description=entry.get("description", "")[:100] if entry.get("description") else None,
                                 ))
+                
+                for channel in channels:
+                    if channel.subscriber_count is None:
+                        details = self._get_channel_details(channel.id)
+                        if details:
+                            channel.subscriber_count = details.get("subs", 0)
+                            channel.subscriber_count_str = self._format_count(details.get("subs"))
                 
                 channels.sort(key=lambda c: c.subscriber_count or 0, reverse=True)
                 return channels[:max_results]
             except Exception:
                 return []
+
+    def _get_channel_details(self, channel_id: str) -> Optional[dict]:
+        """Fetch detailed channel info including subscriber count."""
+        channel_url = f"https://www.youtube.com/channel/{channel_id}"
+        opts = {
+            "quiet": True,
+            "no_warnings": True,
+            "extract_flat": True,
+            "playlist_items": "0",
+        }
+        
+        try:
+            with yt_dlp.YoutubeDL(opts) as ydl:
+                info = ydl.extract_info(channel_url, download=False)
+                if info:
+                    return {
+                        "subs": info.get("channel_follower_count") or info.get("follower_count") or 0,
+                        "name": info.get("channel") or info.get("uploader"),
+                    }
+        except Exception:
+            pass
+        return None
 
     def _format_count(self, count: Optional[int]) -> str:
         """Format a number as human readable (e.g., 1.2M)."""
