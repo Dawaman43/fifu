@@ -27,6 +27,14 @@ You can download the latest standalone binaries and native Linux packages from t
 
 If you have Python 3.10+ installed, you can use:
 
+#### Arch Linux (AUR)
+
+If you are on Arch Linux, you can install via any AUR helper:
+
+```bash
+yay -S fifu
+```
+
 #### PyPI
 
 ```bash
