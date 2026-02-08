@@ -1,6 +1,7 @@
 """Main Fifu Textual application."""
 
 import asyncio
+import sys
 from pathlib import Path
 from typing import Optional
 
@@ -21,7 +22,10 @@ class FifuApp(App):
     TITLE = "Fifu"
     SUB_TITLE = "YouTube Channel Video Downloader"
     
-    CSS_PATH = Path(__file__).parent / "styles" / "app.tcss"
+    if getattr(sys, 'frozen', False) and hasattr(sys, '_MEIPASS'):
+        CSS_PATH = Path(sys._MEIPASS) / "fifu" / "styles" / "app.tcss"
+    else:
+        CSS_PATH = Path(__file__).parent / "styles" / "app.tcss"
     
     BINDINGS = [
         Binding("q", "quit", "Quit", show=True),

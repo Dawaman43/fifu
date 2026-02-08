@@ -19,6 +19,12 @@ A cross-platform TUI for downloading YouTube videos from channels.
 
 ## Installation
 
+### Standalone Binaries (Recommended)
+
+You can download the latest standalone binaries for Windows, Linux, and macOS from the **[Releases](https://github.com/Dawaman43/fifu/releases)** page.
+
+### From Source
+
 ```bash
 cd /path/to/fifu
 python -m venv .venv

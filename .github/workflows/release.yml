@@ -1,0 +1,59 @@
+name: Build and Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+jobs:
+  release:
+    name: Build and Release
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        python-version: ["3.11"]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install PyInstaller
+          pip install .
+
+      - name: Build with PyInstaller (Linux/macOS)
+        if: runner.os != 'Windows'
+        run: |
+          pyinstaller --onefile --add-data "fifu/styles/app.tcss:fifu/styles" --name fifu fifu/__main__.py
+
+      - name: Build with PyInstaller (Windows)
+        if: runner.os == 'Windows'
+        run: |
+          pyinstaller --onefile --add-data "fifu/styles/app.tcss;fifu/styles" --name fifu-win fifu/__main__.py
+
+      - name: Rename binaries
+        shell: bash
+        run: |
+          if [ "${{ runner.os }}" == "Linux" ]; then
+            mv dist/fifu dist/fifu-linux
+          elif [ "${{ runner.os }}" == "macOS" ]; then
+            mv dist/fifu dist/fifu-macos
+          fi
+
+      - name: Release
+        uses: softprops/action-gh-release@v2
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          files: |
+            dist/fifu-linux
+            dist/fifu-win.exe
+            dist/fifu-macos
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
