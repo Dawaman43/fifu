@@ -49,7 +49,8 @@ class YouTubeService:
 
     def search_channels(self, query: str, max_results: int = 30) -> list[ChannelInfo]:
         """Search for YouTube channels by name, sorted by subscriber count."""
-        search_url = f"ytsearch{max_results * 2}:{query}"
+        # Search for a few more videos than requested to find distinct channels
+        search_url = f"ytsearch{max_results + 10}:{query}"
         
         with yt_dlp.YoutubeDL(self._ydl_opts) as ydl:
             try:
@@ -63,7 +64,13 @@ class YouTubeService:
                             channel_id = entry["channel_id"]
                             if channel_id not in seen_channels:
                                 seen_channels.add(channel_id)
-                                sub_count = entry.get("channel_follower_count")
+                                # Handle different metadata layouts in yt-dlp results
+                                sub_count = (
+                                    entry.get("channel_follower_count") or 
+                                    entry.get("uploader_follower_count") or 
+                                    entry.get("follower_count") or 
+                                    entry.get("subscribers")
+                                )
                                 channels.append(ChannelInfo(
                                     id=channel_id,
                                     name=entry.get("channel", entry.get("uploader", "Unknown")),
@@ -73,7 +80,10 @@ class YouTubeService:
                                     description=entry.get("description", "")[:100] if entry.get("description") else None,
                                 ))
                 
-                for channel in channels:
+                # Optimization: Only fetch detailed sub counts for top 5 results to keep search fast (< 5s)
+                # and reuse the ydl instance if possible (but _get_channel_details creates its own)
+                # Modern yt-dlp often gets subscriber_count in the search result for most major channels
+                for channel in channels[:5]:
                     if channel.subscriber_count is None:
                         details = self._get_channel_details(channel.id)
                         if details:
