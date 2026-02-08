@@ -5,14 +5,27 @@ on:
     tags:
       - "v*"
 
+permissions:
+  contents: write
+
 jobs:
-  release:
-    name: Build and Release
+  build:
+    name: Build (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
         python-version: ["3.11"]
+        include:
+          - os: ubuntu-latest
+            artifact_name: fifu-linux
+            asset_name: fifu-linux
+          - os: windows-latest
+            artifact_name: fifu-win
+            asset_name: fifu-win.exe
+          - os: macos-latest
+            artifact_name: fifu-macos
+            asset_name: fifu-macos
 
     steps:
       - uses: actions/checkout@v4
@@ -38,18 +51,39 @@ jobs:
         run: |
           pyinstaller --onefile --add-data "fifu/styles/app.tcss;fifu/styles" --name fifu-win fifu/__main__.py
 
-      - name: Rename binaries
-        shell: bash
-        run: |
-          if [ "${{ runner.os }}" == "Linux" ]; then
-            mv dist/fifu dist/fifu-linux
-          elif [ "${{ runner.os }}" == "macOS" ]; then
-            mv dist/fifu dist/fifu-macos
-          fi
+      - name: Rename binaries (Linux)
+        if: runner.os == 'Linux'
+        run: mv dist/fifu dist/fifu-linux
 
-      - name: Release
+      - name: Rename binaries (macOS)
+        if: runner.os == 'macOS'
+        run: mv dist/fifu dist/fifu-macos
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact_name }}
+          path: |
+            dist/fifu-linux
+            dist/fifu-win.exe
+            dist/fifu-macos
+
+  release:
+    name: Create Release
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          merge-multiple: true
+          path: dist
+
+      - name: List files (Debug)
+        run: ls -R dist
+
+      - name: Create Release
         uses: softprops/action-gh-release@v2
-        if: startsWith(github.ref, 'refs/tags/')
         with:
           files: |
             dist/fifu-linux
