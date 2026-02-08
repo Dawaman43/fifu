@@ -132,16 +132,17 @@ class OptionsScreen(Screen):
                     id="quality-select",
                 )
                 
+                yield Label("Download from Playlist (optional)", classes="option-label")
                 if self.playlists:
-                    with Vertical(id="playlist-section"):
-                        yield Label("Download from Playlist (optional)", classes="option-label")
-                        playlist_options = [("Channel Videos", None)]
-                        playlist_options.extend([(p.title, p.url) for p in self.playlists])
-                        yield Select(
-                            playlist_options,
-                            value=None,
-                            id="playlist-select",
-                        )
+                    playlist_options = [("📹 Channel Videos (default)", None)]
+                    playlist_options.extend([(f"📋 {p.title}", p.url) for p in self.playlists])
+                    yield Select(
+                        playlist_options,
+                        value=None,
+                        id="playlist-select",
+                    )
+                else:
+                    yield Label("No playlists found - downloading from channel videos", id="no-playlists")
                 
                 with Horizontal(id="button-row"):
                     yield Button("▶ Start Download", id="start-button", variant="success")
