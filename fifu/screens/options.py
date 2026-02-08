@@ -30,7 +30,7 @@ class OptionsScreen(Screen):
 
     #options-scroll {
         width: 80;
-        max-height: 90%;
+        max-height: 80vh;
         border: round $primary;
         background: $surface-darken-1;
     }
@@ -38,7 +38,7 @@ class OptionsScreen(Screen):
     #options-box {
         width: 100%;
         height: auto;
-        padding: 2 4;
+        padding: 1 4;
     }
 
     #options-title {
@@ -82,8 +82,13 @@ class OptionsScreen(Screen):
     }
 
     #button-row {
-        margin-top: 2;
-        width: 100%;
+        margin-top: 1;
+        padding: 1 4 2 4;
+        width: 80;
+        background: $surface-darken-1;
+        border-right: round $primary;
+        border-left: round $primary;
+        border-bottom: round $primary;
         align: center middle;
     }
 
@@ -113,40 +118,40 @@ class OptionsScreen(Screen):
     def compose(self) -> ComposeResult:
         """Create the options screen layout."""
         with Container(id="options-container"):
-          with VerticalScroll(id="options-scroll"):
-            with Vertical(id="options-box"):
-                yield Label("⚙️ Download Options", id="options-title")
-                yield Label(f"📺 {self.channel.name}", id="channel-name")
-                
-                yield Label("How many videos?", classes="option-label")
-                yield Input(
-                    placeholder="Enter number or 'all'",
-                    value="all",
-                    id="video-count-input",
-                )
-                
-                yield Label("Video Quality", classes="option-label")
-                yield Select(
-                    [(name, value) for name, value in QUALITY_OPTIONS],
-                    value="best",
-                    id="quality-select",
-                )
-                
-                yield Label("Download from Playlist (optional)", classes="option-label")
-                if self.playlists:
-                    playlist_options = [("📹 Channel Videos (default)", None)]
-                    playlist_options.extend([(f"📋 {p.title}", p.url) for p in self.playlists])
-                    yield Select(
-                        playlist_options,
-                        value=None,
-                        id="playlist-select",
+            with VerticalScroll(id="options-scroll"):
+                with Vertical(id="options-box"):
+                    yield Label("⚙️ Download Options", id="options-title")
+                    yield Label(f"📺 {self.channel.name}", id="channel-name")
+                    
+                    yield Label("How many videos?", classes="option-label")
+                    yield Input(
+                        placeholder="Enter number or 'all'",
+                        value="all",
+                        id="video-count-input",
                     )
-                else:
-                    yield Label("No playlists found - downloading from channel videos", id="no-playlists")
-                
-                with Horizontal(id="button-row"):
-                    yield Button("▶ Start Download", id="start-button", variant="success")
-                    yield Button("← Back", id="back-button", variant="default")
+                    
+                    yield Label("Video Quality", classes="option-label")
+                    yield Select(
+                        [(name, value) for name, value in QUALITY_OPTIONS],
+                        value="best",
+                        id="quality-select",
+                    )
+                    
+                    yield Label("Download from Playlist (optional)", classes="option-label")
+                    if self.playlists:
+                        playlist_options = [("📹 Channel Videos (default)", None)]
+                        playlist_options.extend([(f"📋 {p.title}", p.url) for p in self.playlists])
+                        yield Select(
+                            playlist_options,
+                            value=None,
+                            id="playlist-select",
+                        )
+                    else:
+                        yield Label("No playlists found - downloading from channel videos", id="no-playlists")
+            
+            with Horizontal(id="button-row"):
+                yield Button("▶ Start Download", id="start-button", variant="success")
+                yield Button("← Back", id="back-button", variant="default")
 
     def on_button_pressed(self, event: Button.Pressed) -> None:
         """Handle button presses."""
