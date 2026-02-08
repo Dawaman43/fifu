@@ -1,0 +1,29 @@
+{
+  "name": "fifu-tui",
+  "version": "1.1.0",
+  "description": "A cross-platform TUI for downloading YouTube videos from channels (CLI Wrapper)",
+  "main": "index.js",
+  "bin": {
+    "fifu": "./bin/fifu.js"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "postinstall": "echo 'Please ensure you have Python 3.10+ installed. Run `fifu` to start application.'"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Dawaman43/fifu.git"
+  },
+  "keywords": [
+    "youtube",
+    "downloader",
+    "tui",
+    "video"
+  ],
+  "author": "Dawaman43",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/Dawaman43/fifu/issues"
+  },
+  "homepage": "https://github.com/Dawaman43/fifu#readme"
+}

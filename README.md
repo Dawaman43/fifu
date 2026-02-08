@@ -23,6 +23,22 @@ A cross-platform TUI for downloading YouTube videos from channels.
 
 You can download the latest standalone binaries and native Linux packages from the **[Releases](https://github.com/Dawaman43/fifu/releases)** page.
 
+### Package Managers
+
+If you have Python 3.10+ installed, you can use:
+
+#### PyPI
+
+```bash
+pip install fifu
+```
+
+#### npm
+
+```bash
+npm install -g fifu-tui
+```
+
 #### Linux Distributions:
 
 - **Mint / Ubuntu / Debian**: Download and install the `.deb` package.

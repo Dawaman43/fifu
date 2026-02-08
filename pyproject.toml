@@ -4,15 +4,30 @@ build-backend = "hatchling.build"
 
 [project]
 name = "fifu"
-version = "0.1.0"
+version = "1.1.0"
 description = "A cross-platform TUI for downloading YouTube videos from channels"
 readme = "README.md"
+authors = [
+    { name = "Dawaman43", email = "dawaman43@example.com" }
+]
+license = { text = "MIT" }
+keywords = ["youtube", "downloader", "tui", "textual", "yt-dlp", "video"]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Topic :: Multimedia :: Video",
+]
 requires-python = ">=3.10"
 dependencies = [
     "textual>=0.47.0",
     "yt-dlp>=2024.1.0",
     "click>=8.1.0",
 ]
+
+[project.urls]
+Homepage = "https://github.com/Dawaman43/fifu"
+Issues = "https://github.com/Dawaman43/fifu/issues"
 
 [project.scripts]
 fifu = "fifu.__main__:main"
