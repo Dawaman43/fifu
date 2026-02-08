@@ -1,7 +1,7 @@
 """Download options screen for video count and quality selection."""
 
 from textual.app import ComposeResult
-from textual.containers import Container, Vertical, Horizontal
+from textual.containers import Container, Vertical, Horizontal, VerticalScroll
 from textual.screen import Screen
 from textual.widgets import Button, Input, Label, Select, RadioSet, RadioButton
 
@@ -25,14 +25,20 @@ class OptionsScreen(Screen):
         width: 100%;
         height: 100%;
         align: center middle;
+        overflow: auto;
+    }
+
+    #options-scroll {
+        width: 80;
+        max-height: 90%;
+        border: round $primary;
+        background: $surface-darken-1;
     }
 
     #options-box {
-        width: 70;
+        width: 100%;
         height: auto;
         padding: 2 4;
-        border: round $primary;
-        background: $surface-darken-1;
     }
 
     #options-title {
@@ -107,6 +113,7 @@ class OptionsScreen(Screen):
     def compose(self) -> ComposeResult:
         """Create the options screen layout."""
         with Container(id="options-container"):
+          with VerticalScroll(id="options-scroll"):
             with Vertical(id="options-box"):
                 yield Label("⚙️ Download Options", id="options-title")
                 yield Label(f"📺 {self.channel.name}", id="channel-name")
