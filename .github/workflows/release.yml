@@ -19,13 +19,10 @@ jobs:
         include:
           - os: ubuntu-latest
             artifact_name: fifu-linux
-            asset_name: fifu-linux
           - os: windows-latest
             artifact_name: fifu-win
-            asset_name: fifu-win.exe
           - os: macos-latest
             artifact_name: fifu-macos
-            asset_name: fifu-macos
 
     steps:
       - uses: actions/checkout@v4
@@ -51,13 +48,51 @@ jobs:
         run: |
           pyinstaller --onefile --add-data "fifu/styles/app.tcss;fifu/styles" --name fifu-win fifu/__main__.py
 
-      - name: Rename binaries (Linux)
+      - name: Rename and Prepare (Linux)
         if: runner.os == 'Linux'
-        run: mv dist/fifu dist/fifu-linux
+        run: |
+          mv dist/fifu dist/fifu-linux
+          # Prepare for FPM
+          mkdir -p package/usr/local/bin
+          cp dist/fifu-linux package/usr/local/bin/fifu
 
       - name: Rename binaries (macOS)
         if: runner.os == 'macOS'
         run: mv dist/fifu dist/fifu-macos
+
+      - name: Install FPM (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ruby ruby-dev rubygems build-essential rpm
+          sudo gem install --no-document fpm
+
+      - name: Create .deb (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          fpm -s dir -t deb -n fifu -v ${{ github.ref_name }} \
+            --prefix / \
+            -C package \
+            --description "Fifu - YouTube Channel Video Downloader TUI" \
+            --maintainer "Dawaman43 <github.com/Dawaman43>" \
+            --url "https://github.com/Dawaman43/fifu" \
+            dist/fifu.deb
+
+      - name: Create .rpm (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          fpm -s dir -t rpm -n fifu -v ${{ github.ref_name }} \
+            --prefix / \
+            -C package \
+            --description "Fifu - YouTube Channel Video Downloader TUI" \
+            --maintainer "Dawaman43 <github.com/Dawaman43>" \
+            --url "https://github.com/Dawaman43/fifu" \
+            dist/fifu.rpm
+
+      - name: Create .tar.gz (Linux/Arch)
+        if: runner.os == 'Linux'
+        run: |
+          cd dist && tar -czvf fifu-linux-x64.tar.gz fifu-linux && cd ..
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
@@ -67,6 +102,9 @@ jobs:
             dist/fifu-linux
             dist/fifu-win.exe
             dist/fifu-macos
+            dist/fifu.deb
+            dist/fifu.rpm
+            dist/fifu-linux-x64.tar.gz
 
   release:
     name: Create Release
@@ -87,7 +125,10 @@ jobs:
         with:
           files: |
             dist/fifu-linux
+            dist/fifu-linux-x64.tar.gz
             dist/fifu-win.exe
             dist/fifu-macos
+            dist/fifu.deb
+            dist/fifu.rpm
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

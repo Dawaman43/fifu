@@ -19,9 +19,37 @@ A cross-platform TUI for downloading YouTube videos from channels.
 
 ## Installation
 
-### Standalone Binaries (Recommended)
+### Standalone Binaries & Native Packages (Recommended)
 
-You can download the latest standalone binaries for Windows, Linux, and macOS from the **[Releases](https://github.com/Dawaman43/fifu/releases)** page.
+You can download the latest standalone binaries and native Linux packages from the **[Releases](https://github.com/Dawaman43/fifu/releases)** page.
+
+#### Linux Distributions:
+
+- **Mint / Ubuntu / Debian**: Download and install the `.deb` package.
+  ```bash
+  sudo dpkg -i fifu.deb
+  ```
+- **Fedora / RHEL**: Download and install the `.rpm` package.
+  ```bash
+  sudo rpm -i fifu.rpm
+  ```
+- **Arch / Generic Linux**: Download the `.tar.gz`, extract it, and run the `fifu` binary.
+  ```bash
+  tar -xzvf fifu-linux-x64.tar.gz
+  ./fifu
+  ```
+
+#### Windows:
+
+- Download the `fifu-win.exe` and run it.
+
+#### macOS:
+
+- Download the `fifu-macos`, make it executable, and run it.
+  ```bash
+  chmod +x fifu-macos
+  ./fifu-macos
+  ```
 
 ### From Source
 
