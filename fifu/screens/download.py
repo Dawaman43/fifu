@@ -131,10 +131,16 @@ class DownloadScreen(Screen):
 
         if video_id not in self._active_downloads:
             # Create new progress widget for this video
-            new_widget = Vertical(classes="video-progress-item", id=f"dl-{hash(video_id)}")
-            new_widget.mount(Label(f"🎬 {progress.video_title}", classes="video-title"))
-            new_widget.mount(ProgressBar(total=100, show_eta=False))
-            new_widget.mount(Label("Starting...", classes="video-info"))
+            # Note: We pass children to constructor to avoid "mount before parent mounted" error
+            # Also use abs(hash) to ensure valid ID format
+            safe_id = f"dl_{abs(hash(video_id))}"
+            new_widget = Vertical(
+                Label(f"🎬 {progress.video_title}", classes="video-title"),
+                ProgressBar(total=100, show_eta=False),
+                Label("Starting...", classes="video-info"),
+                classes="video-progress-item",
+                id=safe_id
+            )
             active_container.mount(new_widget)
             self._active_downloads[video_id] = new_widget
             active_container.scroll_to_widget(new_widget)

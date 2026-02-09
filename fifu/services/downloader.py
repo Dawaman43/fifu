@@ -110,13 +110,23 @@ class DownloadService:
         else:
             format_str = quality
         
+        class YDLogger:
+            def debug(self, msg):
+                if msg.startswith('[debug] '): pass
+                else: self.info(msg)
+            def info(self, msg): logging.info(f"yt-dlp: {msg}")
+            def warning(self, msg): logging.warning(f"yt-dlp: {msg}")
+            def error(self, msg): logging.error(f"yt-dlp: {msg}")
+
         ydl_opts = {
             "format": format_str,
             "outtmpl": output_template,
             "progress_hooks": [progress_hook],
-            "quiet": False,  # Turn off quiet to see errors in log
-            "no_warnings": False,
+            "quiet": True,
+            "no_warnings": True,
             "merge_output_format": "mp4",
+            "logger": YDLogger(),
+            "noprogress": True,
         }
 
         if subtitles:

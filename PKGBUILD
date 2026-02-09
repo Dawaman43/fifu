@@ -1,6 +1,6 @@
 # Maintainer: Dawaman43 <github.com/Dawaman43>
 pkgname=fifu
-pkgver=1.4.2
+pkgver=1.4.3
 pkgrel=1
 pkgdesc="A cross-platform TUI for downloading YouTube videos from channels"
 arch=('any')
