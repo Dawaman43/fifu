@@ -5,6 +5,7 @@ import defaultMdxComponents from "fumadocs-ui/mdx";
 import { Card, Cards } from "fumadocs-ui/components/card";
 import { Tab, Tabs } from "fumadocs-ui/components/tabs";
 import { Activity, Terminal, Zap, Layers, ChevronRight, Globe, Github } from "lucide-react";
+import { DownloadCounter } from "@/app/components/download-counter";
 
 export default async function DocsPageRoute(props: {
   params: Promise<{ slug?: string[] }>;
@@ -29,6 +30,7 @@ export default async function DocsPageRoute(props: {
             Cards,
             Tab,
             Tabs,
+            DownloadCounter,
             Activity,
             Terminal,
             Zap,
