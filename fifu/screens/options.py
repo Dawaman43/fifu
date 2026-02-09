@@ -161,12 +161,15 @@ class OptionsScreen(Screen):
             
             with Horizontal(id="button-row"):
                 yield Button("▶ Start Download", id="start-button", variant="success")
+                yield Button("Select Videos Manually", id="manual-select-button", variant="primary")
                 yield Button("← Back", id="back-button", variant="default")
 
     def on_button_pressed(self, event: Button.Pressed) -> None:
         """Handle button presses."""
         if event.button.id == "start-button":
             self._start_download()
+        elif event.button.id == "manual-select-button":
+            self._initiate_video_selection()
         elif event.button.id == "back-button":
             self.app.pop_screen()
 
@@ -220,3 +223,15 @@ class OptionsScreen(Screen):
             playlist_url=playlist_url,
             subtitles=subtitles
         )
+
+    def _initiate_video_selection(self) -> None:
+        """Initiate the manual video selection flow."""
+        playlist_url = None
+        if self.playlists:
+            try:
+                playlist_select = self.query_one("#playlist-select", Select)
+                playlist_url = playlist_select.value
+            except Exception:
+                pass
+        
+        self.app.initiate_video_selection(self.channel, playlist_url)

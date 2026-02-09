@@ -112,6 +112,10 @@ class SearchScreen(Screen):
     }
     """
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._joke_timer = None
+
     def compose(self) -> ComposeResult:
         """Create the search screen layout."""
         with Container(id="search-container"):
@@ -141,11 +145,21 @@ class SearchScreen(Screen):
 
     def on_mount(self) -> None:
         """Initialize the screen."""
+        if self._joke_timer:
+            self._joke_timer.stop()
+            self._joke_timer = None
         self.query_one("#search-input", Input).focus()
+        self.query_one("#search-status", Label).update("")
+        self.query_one("#loading").display = False
         self._refresh_lists()
 
     def on_screen_resume(self) -> None:
         """Refresh lists when returning to this screen."""
+        if self._joke_timer:
+            self._joke_timer.stop()
+            self._joke_timer = None
+        self.query_one("#search-status", Label).update("")
+        self.query_one("#loading").display = False
         self._refresh_lists()
 
     def _refresh_lists(self) -> None:
@@ -206,12 +220,23 @@ class SearchScreen(Screen):
             return
         
         status = self.query_one("#search-status", Label)
-        status.update("Searching...")
+        from fifu.services.joke import JokeService
+        status.update(f"🔍 Searching...\n[i]{JokeService.get_random_joke()}[/i]")
         
         self.app.search_channels(query)
 
+    def _update_joke(self) -> None:
+        """Update the joke in the status label."""
+        status = self.query_one("#search-status", Label)
+        from fifu.services.joke import JokeService
+        status.update(f"🔍 Searching...\n[i]{JokeService.get_random_joke()}[/i]")
+
     def show_error(self, message: str) -> None:
         """Display an error message."""
+        if self._joke_timer:
+            self._joke_timer.stop()
+            self._joke_timer = None
+            
         self.query_one("#loading").display = False
         try:
             self.query_one("#search-button").display = True
@@ -227,5 +252,8 @@ class SearchScreen(Screen):
         except Exception:
             pass
         self.query_one("#loading").display = True
-        status = self.query_one("#search-status", Label)
-        status.update("🔍 Searching...")
+        
+        # Start joke rotation
+        self._update_joke()
+        if not self._joke_timer:
+            self._joke_timer = self.set_interval(3, self._update_joke)

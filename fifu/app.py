@@ -12,6 +12,7 @@ from fifu.screens.search import SearchScreen
 from fifu.screens.channels import ChannelsScreen
 from fifu.screens.download import DownloadScreen
 from fifu.screens.options import OptionsScreen
+from fifu.screens.video_select import VideoSelectScreen
 from fifu.services.youtube import YouTubeService, ChannelInfo, VideoInfo, PlaylistInfo, ChannelInfo
 from fifu.services.downloader import DownloadService, DownloadProgress
 from fifu.services.config import ConfigService
@@ -130,10 +131,69 @@ class FifuApp(App):
 
     async def _load_options_screen(self, channel: ChannelInfo) -> None:
         """Load options screen with playlists."""
+        from fifu.services.joke import JokeService
+        self.notify(f"📡 Loading playlists for {channel.name}...\n[i]{JokeService.get_random_joke()}[/i]", title="Fifu")
         playlists = await asyncio.get_event_loop().run_in_executor(
             None, self.youtube_service.get_channel_playlists, channel.id
         )
         self.push_screen(OptionsScreen(channel, playlists))
+
+    def initiate_video_selection(self, channel: ChannelInfo, playlist_url: Optional[str] = None) -> None:
+        """Initiate video selection flow."""
+        self.run_worker(self._load_video_selection_screen(channel, playlist_url), exclusive=True)
+
+    async def _load_video_selection_screen(self, channel: ChannelInfo, playlist_url: Optional[str] = None) -> None:
+        """Load videos and show selection screen."""
+        from fifu.services.joke import JokeService
+        self.notify(
+            f"🔍 Loading videos from {'playlist' if playlist_url else 'channel'}...\n[i]{JokeService.get_random_joke()}[/i]", 
+            title="Fifu"
+        )
+        
+        try:
+            target_url = playlist_url if playlist_url else channel.url
+            is_playlist = bool(playlist_url)
+            
+            # We need a reasonable limit to stay under 3s
+            limit = 100 
+            
+            if is_playlist:
+                videos = await asyncio.get_event_loop().run_in_executor(
+                    None, 
+                    lambda: self.youtube_service.get_playlist_videos(target_url, limit)
+                )
+                # Store playlist URL for context
+                self._playlist_url = playlist_url
+            else:
+                videos = await asyncio.get_event_loop().run_in_executor(
+                    None, 
+                    lambda: self.youtube_service.get_channel_videos(target_url, limit)
+                )
+                self._playlist_url = None
+                
+            if not videos:
+                self.notify("No videos found to select.", severity="warning", title="Fifu")
+                return
+                
+            self.push_screen(VideoSelectScreen(videos))
+        except Exception as e:
+            self.notify(f"Error loading videos: {str(e)}", severity="error", title="Fifu")
+
+    def on_video_selection_confirmed(self, videos: list[VideoInfo]) -> None:
+        """Handle confirmed video selection."""
+        # Pop the selection screen
+        self.pop_screen()
+        
+        # Start download with selected videos
+        # We use 'best' and 'all' (effectively) as defaults, but these will be overridden by the list
+        self.start_download_with_options(
+            channel=self._current_channel,
+            max_videos=len(videos),
+            quality=self._download_quality, # Preserve last selected quality or default
+            playlist_url=self._playlist_url,
+            subtitles=self._download_subtitles,
+            selected_videos=videos
+        )
 
     def start_download_with_options(
         self,
@@ -142,6 +202,7 @@ class FifuApp(App):
         quality: str,
         playlist_url: Optional[str] = None,
         subtitles: bool = False,
+        selected_videos: Optional[list[VideoInfo]] = None,
     ) -> None:
         """Start downloads with user-selected options."""
         self._current_channel = channel
@@ -149,6 +210,7 @@ class FifuApp(App):
         self._download_quality = quality
         self._playlist_url = playlist_url
         self._download_subtitles = subtitles
+        self._selected_videos = selected_videos # Store selected videos
         self.push_screen(DownloadScreen(channel))
 
     def start_downloads(self, channel: ChannelInfo) -> None:
@@ -165,7 +227,12 @@ class FifuApp(App):
         download_screen.log_message(f"📡 Fetching videos from {channel.name}...")
         
         playlist_url = getattr(self, '_playlist_url', None)
-        if playlist_url:
+        selected_videos = getattr(self, '_selected_videos', None)
+        
+        if selected_videos:
+             download_screen.log_message(f"📋 Processing {len(selected_videos)} selected videos...")
+             videos = selected_videos
+        elif playlist_url:
             download_screen.log_message(f"📋 Loading playlist...")
             videos = await asyncio.get_event_loop().run_in_executor(
                 None, 
