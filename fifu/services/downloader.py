@@ -114,7 +114,6 @@ class DownloadService:
             try:
                 info = ydl.extract_info(video_url, download=False)
                 if info:
-                    nonlocal current_title
                     current_title = info.get("title", "Unknown")
                     
                     if progress_callback:
@@ -148,7 +147,7 @@ class DownloadService:
         
         return DownloadResult(
             success=False,
-            video_title=self._current_title,
+            video_title=current_title,
             error="Unknown error",
         )
 
