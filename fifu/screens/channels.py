@@ -107,6 +107,7 @@ class ChannelsScreen(Screen):
     BINDINGS = [
         ("pageup", "prev_page", "Previous"),
         ("pagedown", "next_page", "Next"),
+        ("f", "toggle_favorite", "Favorite"),
     ]
 
     def __init__(self, channels: list[ChannelInfo], search_query: str):
@@ -165,6 +166,18 @@ class ChannelsScreen(Screen):
         if self.current_page > 0:
             self.current_page -= 1
             self._load_page()
+
+    def action_toggle_favorite(self) -> None:
+        """Toggle favorite status for selected channel."""
+        list_view = self.query_one("#channels-list", ListView)
+        if list_view.index is not None:
+            # Calculate actual index in channels list based on page
+            actual_index = self.current_page * self.page_size + list_view.index
+            if actual_index < len(self.channels):
+                channel = self.channels[actual_index]
+                is_fav = self.app.toggle_favorite(channel)
+                status = "added to" if is_fav else "removed from"
+                self.notify(f"'{channel.name}' {status} favorites")
 
     def on_list_view_selected(self, event: ListView.Selected) -> None:
         """Handle channel selection."""

@@ -1,9 +1,10 @@
 """Search screen for channel name input."""
 
 from textual.app import ComposeResult
-from textual.containers import Container, Vertical
+from textual.containers import Container, Vertical, Horizontal
 from textual.screen import Screen
-from textual.widgets import Button, Input, Label, LoadingIndicator
+from textual.widgets import Button, Input, Label, LoadingIndicator, ListItem, ListView
+from fifu.services.youtube import ChannelInfo
 
 
 class SearchScreen(Screen):
@@ -17,9 +18,9 @@ class SearchScreen(Screen):
     }
 
     #search-box {
-        width: 60;
+        width: 70;
         height: auto;
-        padding: 2 4;
+        padding: 1 2;
         border: round $primary;
         background: $surface-darken-1;
     }
@@ -68,12 +69,46 @@ class SearchScreen(Screen):
         width: 100%;
         text-align: center;
         color: $text-muted;
-        margin-bottom: 2;
+        margin-bottom: 1;
     }
 
     .shoutout-link {
         color: $accent;
         text-style: italic;
+    }
+
+    #lists-container {
+        width: 100%;
+        height: auto;
+        margin-top: 1;
+    }
+
+    .list-section {
+        width: 1fr;
+        height: auto;
+        padding: 0 1;
+    }
+
+    .section-title {
+        text-style: bold;
+        color: $primary;
+        margin-bottom: 1;
+    }
+
+    #history-list, #favorites-list {
+        background: $surface;
+        border: none;
+        height: auto;
+        min-height: 3;
+        max-height: 8;
+    }
+
+    ListItem {
+        padding: 0 1;
+    }
+
+    ListItem:hover {
+        background: $accent 20%;
     }
     """
 
@@ -95,9 +130,39 @@ class SearchScreen(Screen):
                 yield LoadingIndicator(id="loading")
                 yield Label("", id="search-status")
 
+                with Horizontal(id="lists-container"):
+                    with Vertical(classes="list-section"):
+                        yield Label(" Recent", classes="section-title")
+                        yield ListView(id="history-list")
+                    
+                    with Vertical(classes="list-section"):
+                        yield Label("⭐ Favorites", classes="section-title")
+                        yield ListView(id="favorites-list")
+
     def on_mount(self) -> None:
-        """Focus the input when screen mounts."""
+        """Initialize the screen."""
         self.query_one("#search-input", Input).focus()
+        self._refresh_lists()
+
+    def on_screen_resume(self) -> None:
+        """Refresh lists when returning to this screen."""
+        self._refresh_lists()
+
+    def _refresh_lists(self) -> None:
+        """Reload history and favorites from config."""
+        history_list = self.query_one("#history-list", ListView)
+        fav_list = self.query_one("#favorites-list", ListView)
+        
+        history_list.clear()
+        for item in self.app.config_service.get_history():
+            history_list.append(ListItem(Label(item), id=f"hist-{item}"))
+            
+        fav_list.clear()
+        for fav in self.app.config_service.get_favorites():
+            fav_list.append(ListItem(
+                Label(f"📺 {fav['name']} ({fav.get('sub_count_str', 'N/A')})"), 
+                id=f"fav-{fav['id']}"
+            ))
 
     def on_button_pressed(self, event: Button.Pressed) -> None:
         """Handle search button press."""
@@ -108,6 +173,25 @@ class SearchScreen(Screen):
         """Handle enter key in input."""
         if event.input.id == "search-input":
             self._do_search()
+
+    def on_list_view_selected(self, event: ListView.Selected) -> None:
+        """Handle selection in history or favorites."""
+        item_id = event.item.id or ""
+        if item_id.startswith("hist-"):
+            query = item_id[5:]
+            self.query_one("#search-input", Input).value = query
+            self._do_search()
+        elif item_id.startswith("fav-"):
+            channel_id = item_id[4:]
+            favorites = self.app.config_service.get_favorites()
+            fav = next((f for f in favorites if f["id"] == channel_id), None)
+            if fav:
+                channel = ChannelInfo(
+                    id=fav["id"],
+                    name=fav["name"],
+                    url=fav["url"]
+                )
+                self.app.select_channel(channel)
 
     def _do_search(self) -> None:
         """Perform the channel search."""
@@ -127,13 +211,19 @@ class SearchScreen(Screen):
     def show_error(self, message: str) -> None:
         """Display an error message."""
         self.query_one("#loading").display = False
-        self.query_one("#search-button").display = True
+        try:
+            self.query_one("#search-button").display = True
+        except Exception:
+            pass
         status = self.query_one("#search-status", Label)
         status.update(f"❌ {message}")
 
     def show_searching(self) -> None:
         """Show searching status."""
-        self.query_one("#search-button").display = False
+        try:
+            self.query_one("#search-button").display = False
+        except Exception:
+            pass
         self.query_one("#loading").display = True
         status = self.query_one("#search-status", Label)
         status.update("🔍 Searching...")

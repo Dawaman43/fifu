@@ -3,7 +3,7 @@
 from textual.app import ComposeResult
 from textual.containers import Container, Vertical, Horizontal, VerticalScroll
 from textual.screen import Screen
-from textual.widgets import Button, Input, Label, Select, RadioSet, RadioButton
+from textual.widgets import Button, Input, Label, Select, RadioSet, RadioButton, Checkbox
 
 from fifu.services.youtube import ChannelInfo, PlaylistInfo
 
@@ -114,6 +114,7 @@ class OptionsScreen(Screen):
         self.selected_quality = "best"
         self.video_count = "all"
         self.selected_playlist = None
+        self.download_subtitles = False
 
     def compose(self) -> ComposeResult:
         """Create the options screen layout."""
@@ -136,6 +137,9 @@ class OptionsScreen(Screen):
                         value="best",
                         id="quality-select",
                     )
+                    
+                    yield Label("Additional Options", classes="option-label")
+                    yield Checkbox("Download & Embed Subtitles", id="subtitles-check")
                     
                     yield Label("Download from Playlist (optional)", classes="option-label")
                     if self.playlists:
@@ -167,6 +171,11 @@ class OptionsScreen(Screen):
         elif event.select.id == "playlist-select":
             self.selected_playlist = event.value
 
+    def on_checkbox_changed(self, event: Checkbox.Changed) -> None:
+        """Handle checkbox changes."""
+        if event.checkbox.id == "subtitles-check":
+            self.download_subtitles = event.value
+
     def on_input_changed(self, event: Input.Changed) -> None:
         """Handle input changes."""
         if event.input.id == "video-count-input":
@@ -196,9 +205,12 @@ class OptionsScreen(Screen):
             except Exception:
                 pass
         
+        subtitles = self.query_one("#subtitles-check", Checkbox).value
+        
         self.app.start_download_with_options(
             channel=self.channel,
             max_videos=max_videos,
             quality=quality,
             playlist_url=playlist_url,
+            subtitles=subtitles
         )

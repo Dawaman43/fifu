@@ -63,7 +63,8 @@ class DownloadService:
         output_dir: Path,
         progress_callback: Optional[Callable[[DownloadProgress], None]] = None,
         quality: str = "best",
-        video_id: str = "unknown"
+        video_id: str = "unknown",
+        subtitles: bool = False
     ) -> DownloadResult:
         """Download a single video with specified quality."""
         current_title = "Loading..."
@@ -109,6 +110,18 @@ class DownloadService:
             "no_warnings": True,
             "merge_output_format": "mp4",
         }
+
+        if subtitles:
+            ydl_opts.update({
+                "writesubtitles": True,
+                "allsubtitles": False,  # Changed to False to allow specifics
+                "subtitleslangs": ["en.*", ".*"],
+                "embedsubs": True,
+                "postprocessors": [{
+                    "key": "FFmpegEmbedSubtitle",
+                    "already_have_subtitle": False,
+                }],
+            })
         
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             try:
