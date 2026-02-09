@@ -2,12 +2,7 @@
 
 **The Ultra-Fast, Cross-Platform TUI for Downloading YouTube Channel Content.**
 
-[![Build Status](https://github.com/Dawaman43/fifu/actions/workflows/publish.yml/badge.svg)](https://github.com/Dawaman43/fifu/actions)
-[![PyPI version](https://badge.fury.io/py/fifu.svg)](https://pypi.org/project/fifu/)
-[![npm version](https://badge.fury.io/js/fifu-tui.svg)](https://www.npmjs.com/package/fifu-tui)
-[![AUR version](https://img.shields.io/aur/version/fifu)](https://aur.archlinux.org/packages/fifu)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
+[![Build Status](https://github.com/Dawaman43/fifu/actions/workflows/publish.yml/badge.svg)](https://github.com/Dawaman43/fifu/actions) [![PyPI version](https://img.shields.io/pypi/v/fifu.svg)](https://pypi.org/project/fifu/) [![npm version](https://img.shields.io/npm/v/fifu-tui.svg)](https://www.npmjs.com/package/fifu-tui) [![AUR version](https://img.shields.io/aur/version/fifu)](https://aur.archlinux.org/packages/fifu) [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT) [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
 
 Fifu (Fetch It For Us) is a high-performance Terminal User Interface (TUI) designed for power users who want to download entire YouTube channels or playlists with zero friction. Built with **Textual** and powered by **yt-dlp**.
 
