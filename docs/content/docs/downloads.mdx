@@ -11,11 +11,15 @@ Fifu saves downloads to:
 
 `~/Downloads/videos/<channel-name>/`
 
-Each channel gets its own folder. Fifu sanitizes channel names so they are valid folder names on every OS.
+When downloading a **playlist**, it creates a subfolder:
+
+`~/Downloads/videos/<channel-name>/<playlist-name>/`
+
+Fifu sanitizes names so they are valid folder names on every OS.
 
 ## Duplicate handling
 
-Before a queue starts, Fifu checks the output folder and skips videos with the same title. This makes reruns safe and fast.
+Before a queue starts, Fifu checks the output folder and skips videos that have already been fully downloaded (comparing both titles and IDs). This makes reruns safe and fast.
 
 ## File formats
 

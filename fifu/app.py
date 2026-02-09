@@ -2,8 +2,10 @@
 
 import asyncio
 import sys
+import os
 from pathlib import Path
 from typing import Optional
+from concurrent.futures import ThreadPoolExecutor
 
 from textual.app import App
 from textual.binding import Binding
@@ -17,6 +19,17 @@ from fifu.screens.loading import LoadingScreen
 from fifu.services.youtube import YouTubeService, ChannelInfo, VideoInfo, PlaylistInfo
 from fifu.services.downloader import DownloadService, DownloadProgress
 from fifu.services.config import ConfigService
+
+
+async def asyncio_gather_safe(*tasks):
+    """Gather tasks and ensure all are cancelled if one fails or is cancelled."""
+    try:
+        await asyncio.gather(*tasks)
+    except (asyncio.CancelledError, Exception):
+        for task in tasks:
+            if not task.done():
+                task.cancel()
+        raise
 
 
 class FifuApp(App):
@@ -35,11 +48,23 @@ class FifuApp(App):
         Binding("escape", "go_back", "Back", show=True),
     ]
 
+    async def action_quit(self) -> None:
+        """Override quit to ensure clean shutdown of downloads."""
+        self.stop_downloads()
+        # Shutdown executor and cancel pending futures
+        self._download_executor.shutdown(wait=False, cancel_futures=True)
+        # Give a tiny bit of time for threads to receive the signal
+        await asyncio.sleep(0.1)
+        
+        # If we are in the middle of a messy state, force exit to avoid terminal leak
+        os._exit(0)
+
     def __init__(self):
         super().__init__()
         self.youtube_service = YouTubeService()
         self.download_service = DownloadService()
         self.config_service = ConfigService()
+        self._download_executor = ThreadPoolExecutor(max_workers=5)
         self._download_task: Optional[asyncio.Task] = None
         self._stop_downloads = False
         self._current_channel: Optional[ChannelInfo] = None
@@ -356,13 +381,30 @@ class FifuApp(App):
             download_screen.on_queue_complete()
             return
         
-        videos = videos[:self._max_videos]
+        # Deduplicate videos by ID to avoid multiple downloads of the same video
+        unique_videos = []
+        seen_ids = set()
+        for v in videos:
+            if v.id not in seen_ids:
+                unique_videos.append(v)
+                seen_ids.add(v.id)
+        
+        videos = unique_videos[:self._max_videos]
         download_screen.log_message(f"📋 Found {len(videos)} videos to download")
         download_screen.log_message(f"🎬 Quality: {self._download_quality}")
         if self._download_subtitles:
             download_screen.log_message("💬 Subtitles: Enabled")
         
-        output_dir = self.download_service.get_download_path(channel.name)
+        playlist_name = None
+        if playlist_url:
+             metadata = await asyncio.get_event_loop().run_in_executor(
+                 None,
+                 lambda: self.youtube_service.get_playlist_metadata(playlist_url)
+             )
+             if metadata:
+                 playlist_name = metadata[0]
+
+        output_dir = self.download_service.get_download_path(channel.name, playlist_name)
         download_screen.log_message(f"📁 Saving to: {output_dir}")
         
         downloaded_titles = self.download_service.get_downloaded_videos(output_dir)
@@ -391,37 +433,50 @@ class FifuApp(App):
                 video_url = f"https://www.youtube.com/watch?v={video.id}"
                 
                 def progress_callback(progress: DownloadProgress):
+                    # This runs in a side thread from yt-dlp, so we MUST use call_from_thread
                     self.call_from_thread(download_screen.update_progress, progress)
                 
+                def stop_check():
+                    return self._stop_downloads
+
                 quality = self._download_quality
                 subtitles = self._download_subtitles
                 result = await asyncio.get_event_loop().run_in_executor(
-                    None,
+                    self._download_executor,
                     lambda: self.download_service.download_video(
-                        video_url, output_dir, progress_callback, quality, subtitles=subtitles
+                        video_url, 
+                        output_dir, 
+                        progress_callback, 
+                        quality, 
+                        subtitles=subtitles,
+                        stop_check=stop_check
                     )
                 )
                 
                 if result.success:
-                    self.call_from_thread(download_screen.on_download_complete, result.video_title)
+                    # We are in the main thread coroutine here, call directly
+                    download_screen.on_download_complete(result.video_title)
                 else:
-                    self.call_from_thread(
-                        download_screen.on_download_error, 
-                        result.video_title, 
-                        result.error or "Unknown error"
-                    )
+                    if not self._stop_downloads:
+                        download_screen.on_download_error(
+                            result.video_title, 
+                            result.error or "Unknown error"
+                        )
+                    else:
+                        download_screen.log_message(f"⏹ Stopped: {result.video_title}")
 
         for i, video in enumerate(to_download):
             tasks.append(asyncio.create_task(download_task(video, i)))
 
-        await asyncio.gather(*tasks)
+        await asyncio_gather_safe(*tasks)
         
         # Ensure final state is reflected
-        self.call_from_thread(download_screen.update_total_progress, len(to_download), len(to_download))
-        download_screen.on_queue_complete()
+        if not self._stop_downloads:
+            download_screen.update_total_progress(len(to_download), len(to_download))
+            download_screen.on_queue_complete()
 
     def stop_downloads(self) -> None:
-        """Stop the download loop."""
+        """Stop the download loop and signals side threads."""
         self._stop_downloads = True
         if self._download_task:
             self._download_task.cancel()

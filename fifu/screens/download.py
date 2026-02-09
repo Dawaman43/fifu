@@ -88,6 +88,7 @@ class DownloadScreen(Screen):
         self._videos_downloaded = 0
         self._total_videos = 0
         self._active_downloads: dict[str, Vertical] = {}
+        self._active_percents: dict[str, float] = {}
 
     def compose(self) -> ComposeResult:
         """Create the download screen layout."""
@@ -98,11 +99,6 @@ class DownloadScreen(Screen):
                     "Downloading videos to ~/Downloads/videos/",
                     id="channel-subtitle",
                 )
-            
-            with Vertical(id="total-status"):
-                yield Label("Overall Progress", id="total-title")
-                yield ProgressBar(id="total-progress-bar", total=100, show_eta=False)
-                yield Label("0/0 videos downloaded", id="total-info")
             
             with VerticalScroll(id="active-downloads"):
                 # Active download widgets will be added here dynamically
@@ -152,6 +148,7 @@ class DownloadScreen(Screen):
         pbar.progress = progress.percent
         
         if progress.status == "downloading":
+            self._active_percents[video_id] = progress.percent
             info_parts = [f"{progress.percent:.1f}%"]
             if progress.speed:
                 info_parts.append(progress.speed)
@@ -159,23 +156,19 @@ class DownloadScreen(Screen):
                 info_parts.append(f"ETA: {progress.eta}")
             info.update(" • ".join(info_parts))
         elif progress.status == "finishing":
+            self._active_percents[video_id] = 100.0
             info.update("Finishing (merging/cleanup)...")
         elif progress.status == "starting":
+            self._active_percents[video_id] = 0.0
             info.update("Starting download...")
+        
+        self.update_total_progress(self._videos_downloaded, self._total_videos)
 
     def update_total_progress(self, current: int, total: int) -> None:
-        """Update the total queue progress."""
+        """Update the total queue progress tracking."""
         self._total_videos = total
         self._videos_downloaded = current
-        
-        total_bar = self.query_one("#total-progress-bar", ProgressBar)
-        total_info = self.query_one("#total-info", Label)
-        
-        if total > 0:
-            total_bar.progress = (current / total) * 100
-            total_info.update(f"{current}/{total} videos downloaded ({total_bar.progress:.0f}%)")
-        else:
-            total_info.update(f"{current}/{total} videos downloaded")
+        # Overall progress bar removed per user request
 
     def log_message(self, message: str, level: str = "info") -> None:
         """Add a message to the download log."""
@@ -205,6 +198,9 @@ class DownloadScreen(Screen):
         """Handle completed download."""
         self.app.run_worker(self._cleanup_completed_widget(video_title))
         
+        if video_title in self._active_percents:
+             self._active_percents.pop(video_title)
+
         self._videos_downloaded += 1
         self.log_message(f"✅ Downloaded: {video_title}", "success")
         self.update_total_progress(self._videos_downloaded, self._total_videos)
@@ -214,6 +210,9 @@ class DownloadScreen(Screen):
         if video_title in self._active_downloads:
             widget = self._active_downloads.pop(video_title)
             widget.remove()
+        
+        if video_title in self._active_percents:
+            self._active_percents.pop(video_title)
             
         self._videos_downloaded += 1 # Still counted as processed
         self.log_message(f"❌ Failed: {video_title} - {error}", "error")
@@ -221,9 +220,6 @@ class DownloadScreen(Screen):
 
     def on_queue_complete(self) -> None:
         """Handle when all downloads are done."""
-        title_label = self.query_one("#total-title", Label)
-        title_label.update("✓ Queue Complete!")
-        
         self.log_message(
             f"🎉 All done! Processed {self._total_videos} videos",
             "success",

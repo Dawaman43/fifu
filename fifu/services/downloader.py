@@ -9,6 +9,11 @@ from typing import Callable, Optional
 import yt_dlp
 
 
+class DownloadStopped(Exception):
+    """Exception raised when download is stopped by user."""
+    pass
+
+
 @dataclass
 class DownloadProgress:
     """Progress information for a download."""
@@ -52,10 +57,15 @@ class DownloadService:
         )
         logging.info("Downloader service initialized")
 
-    def get_download_path(self, channel_name: str) -> Path:
-        """Get the download path for a channel."""
-        safe_name = self._sanitize_filename(channel_name)
-        downloads_dir = Path.home() / "Downloads" / "videos" / safe_name
+    def get_download_path(self, channel_name: str, playlist_name: Optional[str] = None) -> Path:
+        """Get the download path for a channel, optionally into a playlist subfolder."""
+        safe_channel = self._sanitize_filename(channel_name)
+        downloads_dir = Path.home() / "Downloads" / "videos" / safe_channel
+        
+        if playlist_name:
+            safe_playlist = self._sanitize_filename(playlist_name)
+            downloads_dir = downloads_dir / safe_playlist
+            
         downloads_dir.mkdir(parents=True, exist_ok=True)
         return downloads_dir
 
@@ -77,18 +87,27 @@ class DownloadService:
         progress_callback: Optional[Callable[[DownloadProgress], None]] = None,
         quality: str = "best",
         video_id: str = "unknown",
-        subtitles: bool = False
+        subtitles: bool = False,
+        stop_check: Optional[Callable[[], bool]] = None
     ) -> DownloadResult:
         """Download a single video with specified quality."""
-        current_title = "Loading..."
+        expected_total_bytes = 0
 
         def progress_hook(d: dict):
+            if stop_check and stop_check():
+                raise DownloadStopped("User requested stop")
+                
             if progress_callback:
                 status = d.get("status", "unknown")
                 if status == "downloading":
                     downloaded = d.get("downloaded_bytes", 0)
-                    total = d.get("total_bytes") or d.get("total_bytes_estimate", 0)
-                    percent = (downloaded / total * 100) if total > 0 else 0
+                    total = d.get("total_bytes") or d.get("total_bytes_estimate") or expected_total_bytes
+                    
+                    if total > 0:
+                        percent = (downloaded / total * 100)
+                    else:
+                        # Fallback for when we really don't know the size
+                        percent = 0.01 
                     
                     progress_callback(DownloadProgress(
                         video_title=current_title,
@@ -131,7 +150,8 @@ class DownloadService:
             "no_warnings": True,
             "merge_output_format": "mp4",
             "logger": YDLogger(),
-            "noprogress": True,
+            "noprogress": False,
+            "nooverwrites": True,
         }
 
         if self.is_aria2_available():
@@ -143,6 +163,10 @@ class DownloadService:
                         "--max-connection-per-server=16",
                         "--split=16",
                         "--summary-interval=0",
+                        "--quiet=true",
+                        "--show-console-readout=false",
+                        "--console-log-level=error",
+                        "--download-result=hide",
                     ]
                 }
             })
@@ -160,6 +184,7 @@ class DownloadService:
                 info = ydl.extract_info(video_url, download=False)
                 if info:
                     current_title = info.get("title", "Unknown")
+                    expected_total_bytes = info.get("filesize") or info.get("filesize_approx") or 0
                     
                     if progress_callback:
                         progress_callback(DownloadProgress(
@@ -185,6 +210,13 @@ class DownloadService:
                         video_title=current_title,
                         file_path=file_path if file_path.exists() else None,
                     )
+            except DownloadStopped as e:
+                logging.info(f"Download aborted for {video_url}: {str(e)}")
+                return DownloadResult(
+                    success=False,
+                    video_title=current_title,
+                    error="Stopped by user",
+                )
             except Exception as e:
                 logging.error(f"Download failed for {video_url}: {str(e)}")
                 return DownloadResult(
