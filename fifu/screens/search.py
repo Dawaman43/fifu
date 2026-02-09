@@ -68,8 +68,8 @@ class SearchScreen(Screen):
         width: 100%;
         text-align: center;
         color: $text-muted;
-        font-size: 80%;
-        margin-top: 2;
+        font-size: 70%;
+        margin-bottom: 2;
     }
 
     .shoutout-link {
@@ -84,6 +84,10 @@ class SearchScreen(Screen):
             with Vertical(id="search-box"):
                 yield Label("🎬 FIFU", id="search-title")
                 yield Label("YouTube Channel or Playlist Downloader", id="search-subtitle")
+                yield Label(
+                    "Shout out to [b]The PrimeTime[/b] & [b]Devtopia[/b] ⚡", 
+                    id="shoutouts"
+                )
                 yield Input(
                     placeholder="Enter channel name or paste playlist URL...",
                     id="search-input",
@@ -91,11 +95,6 @@ class SearchScreen(Screen):
                 yield Button("Search / Process URL", id="search-button", variant="primary")
                 yield LoadingIndicator(id="loading")
                 yield Label("", id="search-status")
-            
-            yield Label(
-                "Shout out to [b]The PrimeTime[/b] & [b]Devtopia[/b] ⚡", 
-                id="shoutouts"
-            )
 
     def on_mount(self) -> None:
         """Focus the input when screen mounts."""
