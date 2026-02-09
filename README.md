@@ -22,7 +22,13 @@ Fifu (Fetch It For Us) is a high-performance Terminal User Interface (TUI) desig
 
 ## 🚀 Quick Start
 
-The fastest way to install Fifu on any system is using **pipx**:
+The fastest way to run Fifu instantly is using **npx**:
+
+```bash
+npx fifu-tui
+```
+
+Alternatively, you can install it via **pipx**:
 
 ```bash
 pipx install git+https://github.com/Dawaman43/fifu.git
@@ -31,6 +37,14 @@ pipx install git+https://github.com/Dawaman43/fifu.git
 ---
 
 ## 📦 Installation Options
+
+### 📦 npm (JavaScript Wrapper)
+
+If you prefer using npm, you can install Fifu globally:
+
+```bash
+npm install -g fifu-tui
+```
 
 ### 🐧 Linux
 
