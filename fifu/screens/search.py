@@ -61,6 +61,7 @@ class SearchScreen(Screen):
         width: 100%;
         height: 3;
         margin-top: 1;
+        display: none;
     }
     """
 
@@ -75,6 +76,7 @@ class SearchScreen(Screen):
                     id="search-input",
                 )
                 yield Button("Search / Process URL", id="search-button", variant="primary")
+                yield LoadingIndicator(id="loading")
                 yield Label("", id="search-status")
 
     def on_mount(self) -> None:
@@ -108,10 +110,14 @@ class SearchScreen(Screen):
 
     def show_error(self, message: str) -> None:
         """Display an error message."""
+        self.query_one("#loading").display = False
+        self.query_one("#search-button").display = True
         status = self.query_one("#search-status", Label)
         status.update(f"❌ {message}")
 
     def show_searching(self) -> None:
         """Show searching status."""
+        self.query_one("#search-button").display = False
+        self.query_one("#loading").display = True
         status = self.query_one("#search-status", Label)
         status.update("🔍 Searching...")
