@@ -50,6 +50,21 @@ class FifuApp(App):
         """Initialize the application."""
         self.push_screen(SearchScreen())
 
+    async def action_quit(self) -> None:
+        """Handle quit action with cleanup."""
+        self.stop_downloads()
+        self.youtube_service.shutdown()
+        
+        # Cancel any pending asyncio tasks
+        if self._download_task:
+            self._download_task.cancel()
+            try:
+                await self._download_task
+            except asyncio.CancelledError:
+                pass
+        
+        await super().action_quit()
+
     def action_go_back(self) -> None:
         """Go back to the previous screen."""
         if len(self.screen_stack) > 1:

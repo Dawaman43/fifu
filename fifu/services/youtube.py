@@ -47,6 +47,11 @@ class YouTubeService:
             "no_warnings": True,
             "extract_flat": True,
         }
+        self._executor = concurrent.futures.ThreadPoolExecutor(max_workers=10)
+
+    def shutdown(self):
+        """Shutdown the executor."""
+        self._executor.shutdown(wait=False)
 
     def search_channels(self, query: str, max_results: int = 30) -> list[ChannelInfo]:
         """Search for YouTube channels by name, sorted by subscriber count."""
@@ -83,22 +88,21 @@ class YouTubeService:
                 
                 # Optimization: Fetch detailed sub counts for top 10 results concurrently
                 # to keep search extremely fast (2-3s) instead of sequential
-                to_lookup = channels[:10]
+                to_lookup = [c for c in channels[:10] if c.subscriber_count is None]
                 if to_lookup:
-                    with concurrent.futures.ThreadPoolExecutor(max_workers=10) as executor:
-                        future_to_channel = {
-                            executor.submit(self._get_channel_details, c.id): c 
-                            for c in to_lookup if c.subscriber_count is None
-                        }
-                        for future in concurrent.futures.as_completed(future_to_channel):
-                            channel = future_to_channel[future]
-                            try:
-                                details = future.result()
-                                if details:
-                                    channel.subscriber_count = details.get("subs", 0)
-                                    channel.subscriber_count_str = self._format_count(details.get("subs"))
-                            except Exception:
-                                pass
+                    future_to_channel = {
+                        self._executor.submit(self._get_channel_details, c.id): c 
+                        for c in to_lookup
+                    }
+                    for future in concurrent.futures.as_completed(future_to_channel):
+                        channel = future_to_channel[future]
+                        try:
+                            details = future.result()
+                            if details:
+                                channel.subscriber_count = details.get("subs", 0)
+                                channel.subscriber_count_str = self._format_count(details.get("subs"))
+                        except Exception:
+                            pass
                 
                 channels.sort(key=lambda c: c.subscriber_count or 0, reverse=True)
                 return channels[:max_results]
