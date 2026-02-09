@@ -63,6 +63,19 @@ class SearchScreen(Screen):
         margin-top: 1;
         display: none;
     }
+
+    #shoutouts {
+        width: 100%;
+        text-align: center;
+        color: $text-muted;
+        font-size: 80%;
+        margin-top: 2;
+    }
+
+    .shoutout-link {
+        color: $accent;
+        text-style: italic;
+    }
     """
 
     def compose(self) -> ComposeResult:
@@ -78,6 +91,11 @@ class SearchScreen(Screen):
                 yield Button("Search / Process URL", id="search-button", variant="primary")
                 yield LoadingIndicator(id="loading")
                 yield Label("", id="search-status")
+            
+            yield Label(
+                "Shout out to [b]The PrimeTime[/b] & [b]Devtopia[/b] ⚡", 
+                id="shoutouts"
+            )
 
     def on_mount(self) -> None:
         """Focus the input when screen mounts."""
