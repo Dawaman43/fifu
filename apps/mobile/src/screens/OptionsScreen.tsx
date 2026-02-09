@@ -12,7 +12,7 @@ const COUNTS = ["5", "10", "25", "All"];
 import { apiPost } from "../api/client";
 
 export function OptionsScreen({ route, navigation }: { route: any; navigation: any }) {
-  const { channel } = route.params || {};
+  const { channel, video, isSingleVideo = false } = route.params || {};
   const [selectedQuality, setSelectedQuality] = React.useState("Best");
   const [selectedCount, setSelectedCount] = React.useState("All");
   const [selectedPlaylist, setSelectedPlaylist] = React.useState<any>(null);
@@ -21,10 +21,12 @@ export function OptionsScreen({ route, navigation }: { route: any; navigation: a
   const [loading, setLoading] = React.useState(true);
 
   React.useEffect(() => {
-    if (channel?.id) {
+    if (channel?.id && !isSingleVideo) {
       loadOptions();
+    } else {
+      setLoading(false);
     }
-  }, [channel]);
+  }, [channel, isSingleVideo]);
 
   const loadOptions = async () => {
     try {
@@ -41,41 +43,44 @@ export function OptionsScreen({ route, navigation }: { route: any; navigation: a
     // In a real app, this would hit /api/download or similar
     // For this polish, we navigate to Downloads which shows mock progress for this channel
     navigation.navigate("Downloads", { 
-      channel, 
+      channel: isSingleVideo ? { id: video.id, name: video.title } : channel, 
       quality: selectedQuality, 
-      count: selectedCount,
-      playlist: selectedPlaylist
+      count: isSingleVideo ? "1" : selectedCount,
+      playlist: selectedPlaylist,
+      isSingleVideo
     });
   };
 
   return (
     <ScrollView style={styles.screen} contentContainerStyle={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.title}>Download Options</Text>
-        <Text style={styles.subtitle}>{channel?.name || "Unknown Channel"}</Text>
+        <Text style={styles.title}>{isSingleVideo ? "Video Options" : "Download Options"}</Text>
+        <Text style={styles.subtitle}>{isSingleVideo ? video?.title : channel?.name || "Unknown Source"}</Text>
       </View>
 
-      <Card>
-        <Text style={styles.label}>How many videos?</Text>
-        <View style={styles.chipRow}>
-          {COUNTS.map((label) => (
-            <Chip
-              key={label}
-              label={label}
-              active={selectedCount === label}
-              onPress={() => setSelectedCount(label)}
-            />
-          ))}
-        </View>
-        <TextInput
-          placeholder="Custom count (e.g. 50)"
-          placeholderTextColor={COLORS.muted}
-          style={styles.input}
-          value={selectedCount === "All" ? "" : selectedCount}
-          onChangeText={setSelectedCount}
-          keyboardType="numeric"
-        />
-      </Card>
+      {!isSingleVideo && (
+        <Card>
+          <Text style={styles.label}>How many videos?</Text>
+          <View style={styles.chipRow}>
+            {COUNTS.map((label) => (
+              <Chip
+                key={label}
+                label={label}
+                active={selectedCount === label}
+                onPress={() => setSelectedCount(label)}
+              />
+            ))}
+          </View>
+          <TextInput
+            placeholder="Custom count (e.g. 50)"
+            placeholderTextColor={COLORS.muted}
+            style={styles.input}
+            value={selectedCount === "All" || selectedCount === "" ? "" : selectedCount}
+            onChangeText={setSelectedCount}
+            keyboardType="numeric"
+          />
+        </Card>
+      )}
 
       <Card>
         <Text style={styles.label}>Video quality</Text>
@@ -99,30 +104,32 @@ export function OptionsScreen({ route, navigation }: { route: any; navigation: a
         </View>
       </Card>
 
-      <Card>
-        <Text style={styles.label}>Select Playlist (optional)</Text>
-        {loading ? (
-          <Text style={styles.meta}>Loading playlists...</Text>
-        ) : playlists.length === 0 ? (
-          <Text style={styles.meta}>No playlists found</Text>
-        ) : (
-          <View style={styles.chipRow}>
-            <Chip 
-              label="All Videos" 
-              active={!selectedPlaylist} 
-              onPress={() => setSelectedPlaylist(null)} 
-            />
-            {playlists.map((p) => (
-              <Chip
-                key={p.id}
-                label={`${p.title} (${p.count})`}
-                active={selectedPlaylist?.id === p.id}
-                onPress={() => setSelectedPlaylist(p)}
+      {!isSingleVideo && (
+        <Card>
+          <Text style={styles.label}>Select Playlist (optional)</Text>
+          {loading ? (
+            <Text style={styles.meta}>Loading playlists...</Text>
+          ) : playlists.length === 0 ? (
+            <Text style={styles.meta}>No playlists found</Text>
+          ) : (
+            <View style={styles.chipRow}>
+              <Chip 
+                label="All Videos" 
+                active={!selectedPlaylist} 
+                onPress={() => setSelectedPlaylist(null)} 
               />
-            ))}
-          </View>
-        )}
-      </Card>
+              {playlists.map((p) => (
+                <Chip
+                  key={p.id}
+                  label={`${p.title} (${p.count})`}
+                  active={selectedPlaylist?.id === p.id}
+                  onPress={() => setSelectedPlaylist(p)}
+                />
+              ))}
+            </View>
+          )}
+        </Card>
+      )}
 
       <PrimaryButton label="Start Download" onPress={startDownload} />
     </ScrollView>
@@ -160,8 +167,8 @@ const styles = StyleSheet.create({
     borderRadius: RADIUS.sm,
     paddingHorizontal: SPACING.md,
     borderWidth: 1,
-    borderColor: COLORS.border,
-    backgroundColor: COLORS.white,
+    borderColor: COLORS.surfaceLight,
+    backgroundColor: COLORS.surface,
     color: COLORS.text,
     marginTop: SPACING.md
   },

@@ -1,7 +1,7 @@
 """Channels list screen for selecting a channel."""
 
 from textual.app import ComposeResult
-from textual.containers import Container, Vertical
+from textual.containers import Container, Vertical, Horizontal
 from textual.screen import Screen
 from textual.widgets import Button, Label, ListItem, ListView, Static
 
@@ -35,12 +35,6 @@ class ChannelsScreen(Screen):
     """Screen for displaying and selecting channels."""
 
     CSS = """
-    #channels-container {
-        width: 100%;
-        height: 100%;
-        padding: 1 2;
-    }
-
     #channels-header {
         width: 100%;
         height: auto;
@@ -60,8 +54,11 @@ class ChannelsScreen(Screen):
     #channels-list {
         width: 100%;
         height: 1fr;
+        min-height: 10;
         border: round $primary;
         background: $surface-darken-1;
+        margin-top: 1;
+        margin-bottom: 1;
     }
 
     .channel-item {
@@ -120,20 +117,21 @@ class ChannelsScreen(Screen):
 
     def compose(self) -> ComposeResult:
         """Create the channels screen layout."""
-        with Container(id="channels-container"):
-            with Vertical(id="channels-header"):
-                yield Label(
-                    f"🔍 Results for \"{self.search_query}\" (sorted by subscribers)",
-                    id="channels-title",
-                )
-                yield Label(
-                    f"Found {len(self.channels)} channels • Use PageUp/PageDown to navigate",
-                    id="channels-subtitle",
-                )
-            yield ListView(id="channels-list")
-            with Vertical(id="footer-row"):
-                yield Label("", id="page-info")
-                yield Button("← Back to Search", id="back-button", variant="default")
+        with Vertical(id="channels-header"):
+            yield Label(
+                f"🔍 Results for \"{self.search_query}\" (sorted by subscribers)",
+                id="channels-title",
+            )
+            yield Label(
+                f"Found {len(self.channels)} channels • Use PageUp/PageDown to navigate",
+                id="channels-subtitle",
+            )
+        yield ListView(id="channels-list")
+        with Vertical(id="footer-row"):
+            yield Label("", id="page-info")
+            with Horizontal():
+                yield Button("← Back", id="back-button", variant="default")
+                yield Button("🏠 Home", id="home-button", variant="default")
 
     def on_mount(self) -> None:
         """Load first page when screen mounts."""
@@ -149,8 +147,12 @@ class ChannelsScreen(Screen):
         start = self.current_page * self.page_size
         end = min(start + self.page_size, len(self.channels))
         
+        items = []
         for i, channel in enumerate(self.channels[start:end]):
-            list_view.append(ChannelListItem(channel, start + i))
+            items.append(ChannelListItem(channel, start + i))
+            
+        if items:
+            list_view.mount_all(items)
         
         page_info = self.query_one("#page-info", Label)
         page_info.update(f"Page {self.current_page + 1} of {self.total_pages}")
@@ -188,3 +190,7 @@ class ChannelsScreen(Screen):
         """Handle back button."""
         if event.button.id == "back-button":
             self.app.pop_screen()
+        elif event.button.id == "home-button":
+            from fifu.screens.search import SearchScreen
+            while not isinstance(self.app.screen, SearchScreen):
+                self.app.pop_screen()

@@ -1,6 +1,7 @@
 """Download service for managing video downloads."""
 
 import re
+import shutil
 from dataclasses import dataclass, field
 import logging
 from pathlib import Path
@@ -64,6 +65,10 @@ class DownloadService:
         safe = safe.strip('. ')
         return safe or "unknown_channel"
 
+    def is_aria2_available(self) -> bool:
+        """Check if aria2c is available on the system."""
+        return shutil.which("aria2c") is not None
+
 
     def download_video(
         self,
@@ -97,7 +102,7 @@ class DownloadService:
                 elif status == "finished":
                     progress_callback(DownloadProgress(
                         video_title=current_title,
-                        status="processing",
+                        status="finishing",
                         percent=100.0,
                     ))
 
@@ -128,6 +133,20 @@ class DownloadService:
             "logger": YDLogger(),
             "noprogress": True,
         }
+
+        if self.is_aria2_available():
+            ydl_opts.update({
+                "external_downloader": "aria2c",
+                "external_downloader_args": {
+                    "default": [
+                        "--min-split-size=1M",
+                        "--max-connection-per-server=16",
+                        "--split=16",
+                        "--summary-interval=0",
+                    ]
+                }
+            })
+            logging.info("Using aria2c for multi-threaded downloading")
 
         if subtitles:
             ydl_opts.update({

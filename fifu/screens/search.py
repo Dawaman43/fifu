@@ -45,8 +45,17 @@ class SearchScreen(Screen):
         margin-bottom: 1;
     }
 
-    #search-button {
+    #search-channel-button, #search-video-button {
+        width: 1fr;
+    }
+
+    #search-channel-button {
+        margin-right: 1;
+    }
+
+    #search-buttons-row {
         width: 100%;
+        height: auto;
         margin-top: 1;
     }
 
@@ -130,7 +139,9 @@ class SearchScreen(Screen):
                     placeholder="Enter channel name or paste playlist URL...",
                     id="search-input",
                 )
-                yield Button("Search / Process URL", id="search-button", variant="primary")
+                with Horizontal(id="search-buttons-row"):
+                    yield Button("Search Channels", id="search-channel-button", variant="primary")
+                    yield Button("Search Videos", id="search-video-button", variant="default")
                 yield LoadingIndicator(id="loading")
                 yield Label("", id="search-status")
 
@@ -182,8 +193,10 @@ class SearchScreen(Screen):
 
     def on_button_pressed(self, event: Button.Pressed) -> None:
         """Handle search button press."""
-        if event.button.id == "search-button":
-            self._do_search()
+        if event.button.id == "search-channel-button":
+            self._do_search(search_type="channel")
+        elif event.button.id == "search-video-button":
+            self._do_search(search_type="video")
 
     def on_input_submitted(self, event: Input.Submitted) -> None:
         """Handle enter key in input."""
@@ -196,7 +209,7 @@ class SearchScreen(Screen):
         if hasattr(item, "history_query"):
             query = item.history_query
             self.query_one("#search-input", Input).value = query
-            self._do_search()
+            self._do_search() # Default to channel search from history
         elif item.id and item.id.startswith("fav-"):
             channel_id = item.id[4:]
             favorites = self.app.config_service.get_favorites()
@@ -209,21 +222,24 @@ class SearchScreen(Screen):
                 )
                 self.app.select_channel(channel)
 
-    def _do_search(self) -> None:
-        """Perform the channel search."""
+    def _do_search(self, search_type: str = "channel") -> None:
+        """Perform the search."""
         input_widget = self.query_one("#search-input", Input)
         query = input_widget.value.strip()
         
         if not query:
             status = self.query_one("#search-status", Label)
-            status.update("Please enter a channel name")
+            status.update(f"Please enter a {search_type} name")
             return
         
         status = self.query_one("#search-status", Label)
         from fifu.services.joke import JokeService
-        status.update(f"🔍 Searching...\n[i]{JokeService.get_random_joke()}[/i]")
+        status.update(f"🔍 Searching {search_type}s...\n[i]{JokeService.get_random_joke()}[/i]")
         
-        self.app.search_channels(query)
+        if search_type == "video":
+            self.app.search_videos(query)
+        else:
+            self.app.search_channels(query)
 
     def _update_joke(self) -> None:
         """Update the joke in the status label."""
@@ -239,16 +255,29 @@ class SearchScreen(Screen):
             
         self.query_one("#loading").display = False
         try:
-            self.query_one("#search-button").display = True
+            self.query_one("#search-buttons-row").display = True
         except Exception:
             pass
         status = self.query_one("#search-status", Label)
         status.update(f"❌ {message}")
 
+    def hide_searching(self) -> None:
+        """Hide searching status and reset UI."""
+        if self._joke_timer:
+            self._joke_timer.stop()
+            self._joke_timer = None
+            
+        self.query_one("#loading").display = False
+        try:
+            self.query_one("#search-buttons-row").display = True
+        except Exception:
+            pass
+        self.query_one("#search-status", Label).update("")
+
     def show_searching(self) -> None:
         """Show searching status."""
         try:
-            self.query_one("#search-button").display = False
+            self.query_one("#search-buttons-row").display = False
         except Exception:
             pass
         self.query_one("#loading").display = True

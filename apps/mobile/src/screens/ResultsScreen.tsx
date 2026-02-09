@@ -6,30 +6,41 @@ import { ListRow } from "../components/ListRow";
 import { MOCK_RESULTS } from "../mock";
 
 export function ResultsScreen({ route, navigation }: { route: any; navigation: any }) {
-  const { channels = [] } = route.params || {};
+  const { channels = [], videos = [], type = "channel" } = route.params || {};
+  const data = type === "video" ? videos : channels;
 
   return (
     <ScrollView style={styles.screen} contentContainerStyle={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.title}>Results</Text>
-        <Text style={styles.subtitle}>Found {channels.length} channels</Text>
+        <Text style={styles.title}>{type === "video" ? "Videos" : "Channels"}</Text>
+        <Text style={styles.subtitle}>Found {data.length} {type}s</Text>
       </View>
 
-      {channels.length === 0 ? (
+      {data.length === 0 ? (
         <Card>
-          <Text style={styles.desc}>No channels found for your search.</Text>
+          <Text style={styles.desc}>No {type}s found for your search.</Text>
         </Card>
       ) : (
-        channels.map((item: any) => (
+        data.map((item: any) => (
           <Pressable 
             key={item.id} 
-            onPress={() => navigation.push("Options", { channel: item })}
+            onPress={() => {
+              if (type === "video") {
+                // For direct video search, we skip to options but with single video selected
+                navigation.push("Options", { 
+                  video: item, 
+                  isSingleVideo: true 
+                });
+              } else {
+                navigation.push("Options", { channel: item });
+              }
+            }}
           >
             <Card>
               <ListRow
-                title={item.name}
-                meta={item.subs}
-                hint="Select"
+                title={item.title || item.name}
+                meta={type === "video" ? item.uploader : item.subs}
+                hint={type === "video" ? (item.duration ? `${Math.floor(item.duration / 60)}m` : "Select") : "Select"}
               />
               {item.description ? (
                 <Text style={styles.desc} numberOfLines={2}>{item.description}</Text>

@@ -28,15 +28,15 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.surface
   },
   active: {
-    borderColor: COLORS.cta,
-    backgroundColor: "#EEF2FF"
+    borderColor: COLORS.primary,
+    backgroundColor: COLORS.primary + "20" // 12% opacity
   },
   text: {
-    color: COLORS.text,
+    color: COLORS.muted,
     fontSize: TYPO.small,
     fontWeight: "600"
   },
   textActive: {
-    color: COLORS.cta
+    color: COLORS.primary
   }
 });

@@ -162,14 +162,29 @@ class OptionsScreen(Screen):
             with Horizontal(id="button-row"):
                 yield Button("▶ Start Download", id="start-button", variant="success")
                 yield Button("Select Videos Manually", id="manual-select-button", variant="primary")
+                yield Button("🔍 Search Channel", id="search-channel-videos-button", variant="default")
+                yield Button("📋 Results", id="results-button", variant="default")
+                yield Button("🏠 Home", id="home-button", variant="default")
                 yield Button("← Back", id="back-button", variant="default")
 
     def on_button_pressed(self, event: Button.Pressed) -> None:
         """Handle button presses."""
+        from fifu.screens.channels import ChannelsScreen
+        from fifu.screens.video_select import VideoSelectScreen
+        from fifu.screens.search import SearchScreen
+
         if event.button.id == "start-button":
             self._start_download()
         elif event.button.id == "manual-select-button":
             self._initiate_video_selection()
+        elif event.button.id == "search-channel-videos-button":
+            self._search_channel_videos()
+        elif event.button.id == "results-button":
+            while not isinstance(self.app.screen, (ChannelsScreen, VideoSelectScreen, SearchScreen)):
+                self.app.pop_screen()
+        elif event.button.id == "home-button":
+            while not isinstance(self.app.screen, SearchScreen):
+                self.app.pop_screen()
         elif event.button.id == "back-button":
             self.app.pop_screen()
 
@@ -223,6 +238,11 @@ class OptionsScreen(Screen):
             playlist_url=playlist_url,
             subtitles=subtitles
         )
+
+    def _search_channel_videos(self) -> None:
+        """Prompt user for a search query within the channel."""
+        # Using a simple input callback for now
+        self.app.prompt_for_scoped_search(self.channel)
 
     def _initiate_video_selection(self) -> None:
         """Initiate the manual video selection flow."""

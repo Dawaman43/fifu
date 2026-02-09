@@ -18,6 +18,17 @@ class VideoSelectScreen(Screen):
         Binding("escape", "go_back", "Back"),
     ]
 
+    CSS = """
+    #video-select-container {
+        height: 100%;
+        layout: vertical;
+    }
+    #video-list-scroll {
+        height: 1fr;
+        min-height: 10;
+    }
+    """
+
     def __init__(self, videos: list[VideoInfo]):
         super().__init__()
         self.all_videos = videos
@@ -27,27 +38,27 @@ class VideoSelectScreen(Screen):
 
     def compose(self) -> ComposeResult:
         """Create the video selection layout."""
-        with Container(id="video-select-container"):
-            yield Label("Select Videos to Download", id="video-select-title")
-            
-            # Search/Filter section
-            yield Input(placeholder="Search videos...", id="video-filter-input")
-            
-            with Horizontal(id="selection-controls"):
-                yield Button("Select All", id="select-all-btn", variant="primary", classes="control-btn")
-                yield Button("Deselect All", id="deselect-all-btn", variant="error", classes="control-btn")
-                yield Label(f"Selected: 0/{len(self.all_videos)}", id="selection-count")
+        yield Label("Select Videos to Download", id="video-select-title")
+        
+        # Search/Filter section
+        yield Input(placeholder="Search videos...", id="video-filter-input")
+        
+        with Horizontal(id="selection-controls"):
+            yield Button("Select All", id="select-all-btn", variant="primary", classes="control-btn")
+            yield Button("Deselect All", id="deselect-all-btn", variant="error", classes="control-btn")
+            yield Label(f"Selected: 0/{len(self.all_videos)}", id="selection-count")
 
-            # Video list
-            with VerticalScroll(id="video-list-scroll"):
-                with Vertical(id="video-list"):
-                    # Items will be added dynamically
-                    pass
+        # Video list
+        with VerticalScroll(id="video-list-scroll"):
+            with Vertical(id="video-list"):
+                # Items will be added dynamically
+                pass
 
-            # Footer actions
-            with Horizontal(id="video-select-actions"):
-                yield Button("Confirm Selection", id="confirm-selection-btn", variant="success")
-                yield Button("Back", id="back-btn", variant="default")
+        # Footer actions
+        with Horizontal(id="video-select-actions"):
+            yield Button("Confirm Selection", id="confirm-selection-btn", variant="success")
+            yield Button("🏠 Home", id="home-button", variant="default")
+            yield Button("Back", id="back-btn", variant="default")
 
     def on_mount(self) -> None:
         """Populate the list on mount."""
@@ -116,6 +127,10 @@ class VideoSelectScreen(Screen):
             self._select_all_visible(False)
         elif event.button.id == "confirm-selection-btn":
             self._fullfil_selection()
+        elif event.button.id == "home-button":
+            from fifu.screens.search import SearchScreen
+            while not isinstance(self.app.screen, SearchScreen):
+                self.app.pop_screen()
         elif event.button.id == "back-btn" or event.button.id == "go_back":
             self.action_go_back()
 

@@ -109,6 +109,31 @@ class YouTubeService:
             except Exception:
                 return []
 
+    def search_videos(self, query: str, max_results: int = 50) -> list[VideoInfo]:
+        """Search for individual YouTube videos by title."""
+        search_url = f"ytsearch{max_results}:{query}"
+        
+        with yt_dlp.YoutubeDL(self._ydl_opts) as ydl:
+            try:
+                result = ydl.extract_info(search_url, download=False)
+                videos = []
+                
+                if result and "entries" in result:
+                    for entry in result["entries"]:
+                        if entry:
+                            videos.append(VideoInfo(
+                                id=entry.get("id", ""),
+                                title=entry.get("title", "Unknown"),
+                                url=f"https://www.youtube.com/watch?v={entry.get('id', '')}",
+                                duration=entry.get("duration"),
+                                upload_date=entry.get("upload_date"),
+                                thumbnail=entry.get("thumbnail"),
+                            ))
+                
+                return videos
+            except Exception:
+                return []
+
     def _get_channel_details(self, channel_id: str) -> Optional[dict]:
         """Fetch detailed channel info including subscriber count."""
         channel_url = f"https://www.youtube.com/channel/{channel_id}"

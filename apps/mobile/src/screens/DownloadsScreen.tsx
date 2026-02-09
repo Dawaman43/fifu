@@ -9,7 +9,7 @@ import { MOCK_ACTIVE } from "../mock";
 import { apiGet } from "../api/client";
 
 export function DownloadsScreen({ route }: { route: any }) {
-  const { channel } = route.params || {};
+  const { channel, isSingleVideo = false } = route.params || {};
   const [job, setJob] = React.useState<any>(null);
   const [loading, setLoading] = React.useState(true);
 
@@ -47,7 +47,7 @@ export function DownloadsScreen({ route }: { route: any }) {
     <ScrollView style={styles.screen} contentContainerStyle={styles.container}>
       <View style={styles.header}>
         <Text style={styles.title}>Downloads</Text>
-        <Text style={styles.subtitle}>{channel?.name || "The PrimeTime"}</Text>
+        <Text style={styles.subtitle}>{isSingleVideo ? "Individual Video" : (channel?.name || "Queue")}</Text>
       </View>
 
       <Card>

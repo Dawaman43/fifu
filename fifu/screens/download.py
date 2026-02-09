@@ -158,8 +158,8 @@ class DownloadScreen(Screen):
             if progress.eta:
                 info_parts.append(f"ETA: {progress.eta}")
             info.update(" • ".join(info_parts))
-        elif progress.status == "processing":
-            info.update("Processing...")
+        elif progress.status == "finishing":
+            info.update("Finishing (merging/cleanup)...")
         elif progress.status == "starting":
             info.update("Starting download...")
 
@@ -173,7 +173,9 @@ class DownloadScreen(Screen):
         
         if total > 0:
             total_bar.progress = (current / total) * 100
-        total_info.update(f"{current}/{total} videos downloaded")
+            total_info.update(f"{current}/{total} videos downloaded ({total_bar.progress:.0f}%)")
+        else:
+            total_info.update(f"{current}/{total} videos downloaded")
 
     def log_message(self, message: str, level: str = "info") -> None:
         """Add a message to the download log."""
@@ -186,11 +188,22 @@ class DownloadScreen(Screen):
         else:
             log.write(f"[dim]{message}[/dim]")
 
+    async def _cleanup_completed_widget(self, video_title: str) -> None:
+        """Keep the completed widget visible for a moment then remove."""
+        if video_title in self._active_downloads:
+            widget = self._active_downloads[video_title]
+            info = widget.query_one(".video-info", Label)
+            info.update("[green]✓ Download Completed![/green]")
+            
+            await asyncio.sleep(2)
+            
+            if video_title in self._active_downloads:
+                widget = self._active_downloads.pop(video_title)
+                widget.remove()
+
     def on_download_complete(self, video_title: str) -> None:
         """Handle completed download."""
-        if video_title in self._active_downloads:
-            widget = self._active_downloads.pop(video_title)
-            widget.remove()
+        self.app.run_worker(self._cleanup_completed_widget(video_title))
         
         self._videos_downloaded += 1
         self.log_message(f"✅ Downloaded: {video_title}", "success")

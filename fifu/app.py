@@ -13,7 +13,8 @@ from fifu.screens.channels import ChannelsScreen
 from fifu.screens.download import DownloadScreen
 from fifu.screens.options import OptionsScreen
 from fifu.screens.video_select import VideoSelectScreen
-from fifu.services.youtube import YouTubeService, ChannelInfo, VideoInfo, PlaylistInfo, ChannelInfo
+from fifu.screens.loading import LoadingScreen
+from fifu.services.youtube import YouTubeService, ChannelInfo, VideoInfo, PlaylistInfo
 from fifu.services.downloader import DownloadService, DownloadProgress
 from fifu.services.config import ConfigService
 
@@ -97,7 +98,33 @@ class FifuApp(App):
             return
         
         self.config_service.add_history(query)
+        current_screen.hide_searching()
         self.push_screen(ChannelsScreen(channels, query))
+
+    def search_videos(self, query: str) -> None:
+        """Search for individual videos and display selection screen."""
+        self.run_worker(self._search_videos_async(query), exclusive=True)
+
+    async def _search_videos_async(self, query: str) -> None:
+        """Async worker to search videos."""
+        current_screen = self.screen
+        if not isinstance(current_screen, SearchScreen):
+            return
+        
+        current_screen.show_searching()
+        
+        videos = await asyncio.get_event_loop().run_in_executor(
+            None, self.youtube_service.search_videos, query
+        )
+        
+        if not videos:
+            current_screen.show_error("No videos found. Try a different search.")
+            return
+            
+        self.config_service.add_history(query)
+        current_screen.hide_searching()
+        # We treat this as a "manual selection" flow for the results
+        self.push_screen(VideoSelectScreen(videos))
 
     async def _handle_direct_url(self, url: str) -> None:
         """Handle direct playlist/video URL."""
@@ -120,6 +147,7 @@ class FifuApp(App):
             self._current_channel = channel
             self._playlist_url = url
             self.config_service.add_history(url)
+            current_screen.hide_searching()
             self.push_screen(OptionsScreen(channel, [])) # No other playlists to select
         else:
             current_screen.show_error("Invalid URL or couldn't fetch metadata.")
@@ -144,18 +172,14 @@ class FifuApp(App):
 
     async def _load_video_selection_screen(self, channel: ChannelInfo, playlist_url: Optional[str] = None) -> None:
         """Load videos and show selection screen."""
-        from fifu.services.joke import JokeService
-        self.notify(
-            f"🔍 Loading videos from {'playlist' if playlist_url else 'channel'}...\n[i]{JokeService.get_random_joke()}[/i]", 
-            title="Fifu"
-        )
+        self.push_screen(LoadingScreen(f"Loading {channel.name}'s videos..."))
         
         try:
             target_url = playlist_url if playlist_url else channel.url
             is_playlist = bool(playlist_url)
             
             # We need a reasonable limit to stay under 3s
-            limit = 100 
+            limit = 500 
             
             if is_playlist:
                 videos = await asyncio.get_event_loop().run_in_executor(
@@ -175,8 +199,11 @@ class FifuApp(App):
                 self.notify("No videos found to select.", severity="warning", title="Fifu")
                 return
                 
+            # Pop the loading screen
+            self.pop_screen()
             self.push_screen(VideoSelectScreen(videos))
         except Exception as e:
+            self.pop_screen() # Pop loading screen
             self.notify(f"Error loading videos: {str(e)}", severity="error", title="Fifu")
 
     def on_video_selection_confirmed(self, videos: list[VideoInfo]) -> None:
@@ -184,16 +211,96 @@ class FifuApp(App):
         # Pop the selection screen
         self.pop_screen()
         
+        # If we don't have a channel (searching videos directly), create a placeholder
+        if not self._current_channel:
+            self._current_channel = ChannelInfo(
+                id="search_results",
+                name="Search Results",
+                url=""
+            )
+        
         # Start download with selected videos
-        # We use 'best' and 'all' (effectively) as defaults, but these will be overridden by the list
         self.start_download_with_options(
             channel=self._current_channel,
             max_videos=len(videos),
-            quality=self._download_quality, # Preserve last selected quality or default
+            quality=self._download_quality,
             playlist_url=self._playlist_url,
             subtitles=self._download_subtitles,
             selected_videos=videos
         )
+
+    def prompt_for_scoped_search(self, channel: ChannelInfo) -> None:
+        """Prompt user for a query within a channel."""
+        from textual.app import ComposeResult
+        from textual.containers import Container, Vertical, Horizontal
+        from textual.widgets import Input, Label, Button
+        from textual.screen import ModalScreen
+
+        class ScopedPromptScreen(ModalScreen):
+            CSS = """
+            #scoped-container {
+                width: 100%;
+                height: 100%;
+                align: center middle;
+                background: $surface-darken-1 80%;
+            }
+            #scoped-box {
+                width: 60;
+                height: auto;
+                padding: 1 4;
+                border: round $primary;
+                background: $surface;
+            }
+            """
+            
+            def compose(self) -> ComposeResult:
+                with Container(id="scoped-container"):
+                    with Vertical(id="scoped-box"):
+                        yield Label(f"🔍 Search within {channel.name}")
+                        yield Input(placeholder="Enter search terms...", id="scoped-input")
+                        with Horizontal():
+                            yield Button("Search", id="confirm-search", variant="primary")
+                            yield Button("Cancel", id="cancel-search")
+
+            def on_button_pressed(self, event: Button.Pressed) -> None:
+                if event.button.id == "confirm-search":
+                    query = self.query_one("#scoped-input", Input).value
+                    self.dismiss(query)
+                else:
+                    self.dismiss(None)
+
+        def on_prompt_dismiss(query: Optional[str]) -> None:
+            if query:
+                self.run_worker(self._perform_scoped_search(channel, query), exclusive=True)
+
+        self.push_screen(ScopedPromptScreen(), callback=on_prompt_dismiss)
+
+    async def _perform_scoped_search(self, channel: ChannelInfo, query: str) -> None:
+        """Search videos within a specific channel."""
+        self.push_screen(LoadingScreen(f"Searching for '{query}' in {channel.name}..."))
+        
+        try:
+            # We search broadly and then filter, OR try to find videos matching query + uploader
+            full_query = f"{query} {channel.name}"
+            videos = await asyncio.get_event_loop().run_in_executor(
+                None, 
+                lambda: self.youtube_service.search_videos(full_query, 50)
+            )
+            
+            # Filter results to match uploader as much as possible
+            # ytsearch doesn't always guarantee uploader in metadata for entries initially
+            # but our search_videos uses ydl.extract_info which should have it.
+            # However, for speed we might have to accept loosely matched results.
+            
+            self.pop_screen() # Pop loading screen
+            if not videos:
+                self.notify("No matching videos found in this channel.", severity="warning")
+                return
+            
+            self.push_screen(VideoSelectScreen(videos))
+        except Exception as e:
+            self.pop_screen()
+            self.notify(f"Search error: {str(e)}", severity="error")
 
     def start_download_with_options(
         self,
@@ -308,6 +415,9 @@ class FifuApp(App):
             tasks.append(asyncio.create_task(download_task(video, i)))
 
         await asyncio.gather(*tasks)
+        
+        # Ensure final state is reflected
+        self.call_from_thread(download_screen.update_total_progress, len(to_download), len(to_download))
         download_screen.on_queue_complete()
 
     def stop_downloads(self) -> None:
