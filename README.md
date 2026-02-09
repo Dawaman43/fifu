@@ -31,7 +31,7 @@ npx fifu-tui
 Alternatively, you can install it via **pipx**:
 
 ```bash
-pipx install git+https://github.com/Dawaman43/fifu.git
+pipx install git+https://github.com/Dawaman43/fifu.git --force
 ```
 
 ---
