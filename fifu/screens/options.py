@@ -105,6 +105,13 @@ class OptionsScreen(Screen):
         height: auto;
         margin-bottom: 1;
     }
+
+    Checkbox {
+        width: 100%;
+        margin-top: 1;
+        background: $surface;
+        border: none;
+    }
     """
 
     def __init__(self, channel: ChannelInfo, playlists: list[PlaylistInfo] = None):
@@ -131,15 +138,14 @@ class OptionsScreen(Screen):
                         id="video-count-input",
                     )
                     
+                    yield Checkbox("Download & Embed Subtitles", id="subtitles-check")
+                    
                     yield Label("Video Quality", classes="option-label")
                     yield Select(
                         [(name, value) for name, value in QUALITY_OPTIONS],
                         value="best",
                         id="quality-select",
                     )
-                    
-                    yield Label("Additional Options", classes="option-label")
-                    yield Checkbox("Download & Embed Subtitles", id="subtitles-check")
                     
                     yield Label("Download from Playlist (optional)", classes="option-label")
                     if self.playlists:
