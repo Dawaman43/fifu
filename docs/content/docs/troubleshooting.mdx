@@ -1,0 +1,35 @@
+---
+title: Troubleshooting
+description: Common issues and quick fixes.
+---
+
+# Troubleshooting
+
+## No videos found
+
+- Confirm the channel has public uploads.
+- If you used a playlist URL, verify it is public and not region-restricted.
+
+## Downloads fail instantly
+
+- Check your network connection.
+- Ensure `yt-dlp` can access YouTube from your region.
+- Review `~/.config/fifu/downloader.log` for the exact error.
+
+## Some files are missing audio or video
+
+Install `ffmpeg` so `yt-dlp` can merge audio and video streams when needed.
+
+## The app exits while downloading
+
+Fifu cancels active downloads when you quit. Let the queue finish or restart later; already-downloaded titles will be skipped.
+
+## Output folder is empty
+
+- Verify you have permission to write to `~/Downloads/videos/`.
+- Check the log file for errors during download or merge steps.
+
+## Subtitles did not embed
+
+- Some videos do not have subtitle tracks available.
+- If subtitles download separately, make sure `ffmpeg` is installed so embedding can complete.

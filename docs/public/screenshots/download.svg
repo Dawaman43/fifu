@@ -1,0 +1,12 @@
+<svg width="1200" height="700" viewBox="0 0 1200 700" xmlns="http://www.w3.org/2000/svg">
+  <rect width="1200" height="700" fill="#0f172a"/>
+  <rect x="60" y="60" width="1080" height="580" rx="32" fill="#111c2d" stroke="#1e293b" stroke-width="2"/>
+  <text x="110" y="95" fill="#a8b2c3" font-family="IBM Plex Sans, sans-serif" font-size="18" letter-spacing="2">DOWNLOAD QUEUE</text>
+  <rect x="110" y="130" width="980" height="70" rx="22" fill="#1a2740"/>
+  <rect x="110" y="220" width="980" height="220" rx="24" fill="#1a2740"/>
+  <rect x="110" y="460" width="980" height="140" rx="24" fill="#1a2740"/>
+  <text x="140" y="175" fill="#eef2f8" font-family="IBM Plex Sans, sans-serif" font-size="20">Overall progress: 3/12 videos</text>
+  <text x="140" y="280" fill="#a8b2c3" font-family="JetBrains Mono, monospace" font-size="16">Active downloads (3)</text>
+  <text x="140" y="520" fill="#a8b2c3" font-family="JetBrains Mono, monospace" font-size="16">Queue log</text>
+  <text x="140" y="620" fill="#22c55e" font-family="JetBrains Mono, monospace" font-size="14">Tip: Press q to quit safely</text>
+</svg>

@@ -1,0 +1,56 @@
+---
+title: Installation
+description: Install Fifu via npm, pipx, or prebuilt releases.
+---
+
+# Installation
+
+Fifu is distributed as a Python app with an npm wrapper for quick startup. Choose the path that fits your workflow.
+
+## Quick run with npx
+
+```bash
+npx fifu-tui
+```
+
+## Install with pipx
+
+```bash
+pipx install git+https://github.com/Dawaman43/fifu.git
+```
+
+## Install globally with npm
+
+```bash
+npm install -g fifu-tui
+```
+
+## Linux packages
+
+- Arch: `yay -S fifu`
+- Debian/Ubuntu/Mint: download the `.deb` from GitHub Releases and run `sudo dpkg -i fifu.deb`
+- Fedora/RHEL: download the `.rpm` from GitHub Releases and run `sudo rpm -i fifu.rpm`
+
+## macOS
+
+```bash
+curl -L -o fifu https://github.com/Dawaman43/fifu/releases/latest/download/fifu-macos
+chmod +x fifu
+./fifu
+```
+
+## Windows
+
+Download `fifu-win.exe` from GitHub Releases and run it from PowerShell or by double-clicking.
+
+## Requirements
+
+- Python 3.10 or newer
+- Network access for YouTube
+- Optional: `ffmpeg` for merging separate audio and video streams
+
+## Verify the install
+
+Run the app and confirm it launches:
+
+`fifu`

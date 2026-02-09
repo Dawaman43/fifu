@@ -1,0 +1,35 @@
+---
+title: Workflow
+description: The complete end-to-end flow from search to finished queue.
+---
+
+# Workflow
+
+Use this page as the full mental model for how Fifu operates.
+
+## 1. Launch
+
+Run `fifu` or `npx fifu-tui` and wait for the search screen to load.
+
+## 2. Search or paste
+
+- Search by channel name and press Enter.
+- Or paste a playlist URL to skip search and go straight to options.
+
+## 3. Choose a target
+
+Pick the channel you want from the results list. If the channel exposes playlists or sections, you can optionally target those in the options screen.
+
+## 4. Configure downloads
+
+- Select the number of videos to download.
+- Pick a quality preset or audio-only mode.
+- Toggle subtitle download and embedding.
+
+## 5. Run the queue
+
+The download screen shows live progress for each active download. Fifu processes up to three videos at a time.
+
+## 6. Re-run safely
+
+Re-running the same channel or playlist is safe. Fifu checks the output folder and skips titles that already exist.

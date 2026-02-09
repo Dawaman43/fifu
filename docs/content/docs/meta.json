@@ -1,0 +1,19 @@
+{
+  "title": "Fifu",
+  "pages": [
+    "index",
+    "features",
+    "installation",
+    "quickstart",
+    "workflow",
+    "usage",
+    "ui-tour",
+    "controls",
+    "options",
+    "downloads",
+    "configuration",
+    "troubleshooting",
+    "faq",
+    "glossary"
+  ]
+}

@@ -1,0 +1,135 @@
+@import "tailwindcss";
+@config "../tailwind.config.ts";
+@import "fumadocs-ui/style.css";
+
+:root {
+  color-scheme: dark;
+  --ink-950: 2 6 23;
+  --ink-900: 15 23 42;
+  --ink-800: 30 41 59;
+  --ink-700: 51 65 85;
+  --ink-600: 71 85 105;
+  --ink-500: 100 116 139;
+  --ink-300: 148 163 184;
+  --ink-100: 241 245 249;
+  --accent-500: 34 197 94;
+  --accent-600: 22 163 74;
+  --accent-700: 21 128 61;
+  --shadow-glow: 0 0 40px rgba(34, 197, 94, 0.2);
+  --shadow-lift: 0 20px 60px rgba(12, 18, 30, 0.45);
+  --glass-from: rgba(255, 255, 255, 0.08);
+  --glass-to: rgba(255, 255, 255, 0.02);
+  --glass-border: rgba(255, 255, 255, 0.12);
+  --hero-dot-soft: rgba(255, 255, 255, 0.04);
+  --hero-dot-accent: rgba(34, 197, 94, 0.12);
+  --hero-wash: rgba(2, 6, 23, 0.98);
+  --hero-wash-soft: rgba(15, 23, 42, 0.85);
+}
+
+[data-theme="light"] {
+  color-scheme: light;
+  --ink-950: 248 250 252;
+  --ink-900: 241 245 249;
+  --ink-800: 226 232 240;
+  --ink-700: 203 213 225;
+  --ink-600: 148 163 184;
+  --ink-500: 100 116 139;
+  --ink-300: 71 85 105;
+  --ink-100: 15 23 42;
+  --accent-500: 22 163 74;
+  --accent-600: 21 128 61;
+  --accent-700: 20 83 45;
+  --shadow-glow: 0 0 30px rgba(22, 163, 74, 0.25);
+  --shadow-lift: 0 16px 40px rgba(15, 23, 42, 0.12);
+  --glass-from: rgba(15, 23, 42, 0.06);
+  --glass-to: rgba(15, 23, 42, 0.02);
+  --glass-border: rgba(15, 23, 42, 0.1);
+  --hero-dot-soft: rgba(15, 23, 42, 0.06);
+  --hero-dot-accent: rgba(22, 163, 74, 0.2);
+  --hero-wash: rgba(248, 250, 252, 0.96);
+  --hero-wash-soft: rgba(241, 245, 249, 0.85);
+}
+
+body {
+  @apply bg-ink-950 text-ink-100 antialiased;
+  line-height: 1.6;
+}
+
+.prose :where(code):not(:where([class~="not-prose"] *)) {
+  @apply rounded bg-ink-800/80 px-1 py-0.5 text-ink-100;
+}
+
+.hero-grid {
+  background-image:
+    radial-gradient(
+      circle at 1px 1px,
+      var(--hero-dot-soft) 1px,
+      transparent 0
+    ),
+    radial-gradient(
+      circle at 1px 1px,
+      var(--hero-dot-accent) 1px,
+      transparent 0
+    ),
+    linear-gradient(120deg, var(--hero-wash), var(--hero-wash-soft));
+  background-size:
+    26px 26px,
+    140px 140px,
+    100% 100%;
+  background-position:
+    0 0,
+    12px 12px,
+    center;
+}
+
+.glass {
+  background: linear-gradient(
+    135deg,
+    var(--glass-from),
+    var(--glass-to)
+  );
+  border: 1px solid var(--glass-border);
+  backdrop-filter: blur(12px);
+}
+
+.focus-ring {
+  @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-2 focus-visible:ring-offset-ink-900;
+}
+
+.text-gradient {
+  background: linear-gradient(to bottom right, #ffffff, #94a3b8);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+@keyframes float {
+  0% { transform: translateY(0px); }
+  50% { transform: translateY(-10px); }
+  100% { transform: translateY(0px); }
+}
+
+.animate-float {
+  animation: float 6s ease-in-out infinite;
+}
+
+.glow-point {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  background-color: var(--accent-500);
+  box-shadow: 0 0 100px 50px rgba(34, 197, 94, 0.15);
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

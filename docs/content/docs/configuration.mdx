@@ -1,0 +1,25 @@
+---
+title: Configuration & data
+description: History, favorites, and stored data locations.
+---
+
+# Configuration & data
+
+Fifu stores lightweight local data so you can resume your workflow quickly.
+
+## History and favorites
+
+History and favorites are stored in:
+
+`~/.config/fifu/data.json`
+
+- History keeps the 10 most recent searches.
+- Favorites store the channel metadata needed to re-open a channel quickly.
+
+## Clearing history
+
+To clear history, remove the `history` array from `data.json` or delete the file entirely. Fifu will recreate it on next launch.
+
+## Reset everything
+
+Delete `~/.config/fifu/data.json` to reset both history and favorites. The file will be re-created automatically.

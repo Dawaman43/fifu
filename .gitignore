@@ -38,3 +38,16 @@ htmlcov/
 # OS
 .DS_Store
 Thumbs.db
+
+# Node.js
+node_modules/
+.npm
+package-lock.json
+yarn.lock
+
+# Next.js
+.next/
+out/
+
+# Fumadocs
+.source/

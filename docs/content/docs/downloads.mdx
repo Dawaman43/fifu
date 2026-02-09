@@ -1,0 +1,31 @@
+---
+title: Downloads & files
+description: Where files go and how Fifu handles duplicates.
+---
+
+# Downloads & files
+
+## Download path
+
+Fifu saves downloads to:
+
+`~/Downloads/videos/<channel-name>/`
+
+Each channel gets its own folder. Fifu sanitizes channel names so they are valid folder names on every OS.
+
+## Duplicate handling
+
+Before a queue starts, Fifu checks the output folder and skips videos with the same title. This makes reruns safe and fast.
+
+## File formats
+
+- Video downloads are merged into MP4 when possible.
+- Audio-only downloads are saved using the best available audio format.
+
+## Logs
+
+A downloader log is written to:
+
+`~/.config/fifu/downloader.log`
+
+Use this file if you need to diagnose failed downloads or report a bug.
