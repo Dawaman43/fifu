@@ -1,6 +1,6 @@
 {
   "name": "fifu-tui",
-  "version": "1.4.4",
+  "version": "1.4.5",
   "description": "A cross-platform TUI for downloading YouTube videos from channels (CLI Wrapper)",
   "main": "index.js",
   "bin": {
