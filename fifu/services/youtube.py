@@ -1,8 +1,9 @@
 """YouTube service using yt-dlp for channel search and video extraction."""
 
 from dataclasses import dataclass
-from typing import Optional
+from typing import Optional, List, Tuple
 import yt_dlp
+import concurrent.futures
 
 
 @dataclass
@@ -80,15 +81,24 @@ class YouTubeService:
                                     description=entry.get("description", "")[:100] if entry.get("description") else None,
                                 ))
                 
-                # Optimization: Only fetch detailed sub counts for top 5 results to keep search fast (< 5s)
-                # and reuse the ydl instance if possible (but _get_channel_details creates its own)
-                # Modern yt-dlp often gets subscriber_count in the search result for most major channels
-                for channel in channels[:5]:
-                    if channel.subscriber_count is None:
-                        details = self._get_channel_details(channel.id)
-                        if details:
-                            channel.subscriber_count = details.get("subs", 0)
-                            channel.subscriber_count_str = self._format_count(details.get("subs"))
+                # Optimization: Fetch detailed sub counts for top 10 results concurrently
+                # to keep search extremely fast (2-3s) instead of sequential
+                to_lookup = channels[:10]
+                if to_lookup:
+                    with concurrent.futures.ThreadPoolExecutor(max_workers=10) as executor:
+                        future_to_channel = {
+                            executor.submit(self._get_channel_details, c.id): c 
+                            for c in to_lookup if c.subscriber_count is None
+                        }
+                        for future in concurrent.futures.as_completed(future_to_channel):
+                            channel = future_to_channel[future]
+                            try:
+                                details = future.result()
+                                if details:
+                                    channel.subscriber_count = details.get("subs", 0)
+                                    channel.subscriber_count_str = self._format_count(details.get("subs"))
+                            except Exception:
+                                pass
                 
                 channels.sort(key=lambda c: c.subscriber_count or 0, reverse=True)
                 return channels[:max_results]
