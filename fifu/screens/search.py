@@ -68,7 +68,6 @@ class SearchScreen(Screen):
         width: 100%;
         text-align: center;
         color: $text-muted;
-        font-size: 70%;
         margin-bottom: 2;
     }
 

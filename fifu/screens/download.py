@@ -34,26 +34,33 @@ class DownloadScreen(Screen):
         color: $text-muted;
     }
 
-    #download-status {
+    #total-status {
         width: 100%;
         height: auto;
         padding: 1 2;
-        border: round $secondary;
+        border: round $primary;
         background: $surface-darken-1;
         margin-bottom: 1;
     }
 
-    #current-video {
-        text-style: bold;
-        margin-bottom: 1;
-    }
-
-    #progress-bar {
+    #active-downloads {
         width: 100%;
+        height: auto;
+        max-height: 10;
         margin-bottom: 1;
     }
 
-    #progress-info {
+    .video-progress-item {
+        margin-bottom: 1;
+        padding: 0 1;
+        border-left: double $secondary;
+    }
+
+    .video-title {
+        text-style: bold;
+    }
+
+    .video-info {
         color: $text-muted;
     }
 
@@ -78,8 +85,9 @@ class DownloadScreen(Screen):
     def __init__(self, channel: ChannelInfo):
         super().__init__()
         self.channel = channel
-        self._current_video = ""
         self._videos_downloaded = 0
+        self._total_videos = 0
+        self._active_downloads: dict[str, Vertical] = {}
 
     def compose(self) -> ComposeResult:
         """Create the download screen layout."""
@@ -91,10 +99,14 @@ class DownloadScreen(Screen):
                     id="channel-subtitle",
                 )
             
-            with Vertical(id="download-status"):
-                yield Label("Preparing...", id="current-video")
-                yield ProgressBar(id="progress-bar", total=100, show_eta=False)
-                yield Label("", id="progress-info")
+            with Vertical(id="total-status"):
+                yield Label("Overall Progress", id="total-title")
+                yield ProgressBar(id="total-progress-bar", total=100, show_eta=False)
+                yield Label("0/0 videos downloaded", id="total-info")
+            
+            with VerticalScroll(id="active-downloads"):
+                # Active download widgets will be added here dynamically
+                pass
             
             yield RichLog(id="download-log", highlight=True, markup=True)
             
@@ -113,16 +125,25 @@ class DownloadScreen(Screen):
             self.app.exit()
 
     def update_progress(self, progress: DownloadProgress) -> None:
-        """Update the progress display."""
-        video_label = self.query_one("#current-video", Label)
-        progress_bar = self.query_one("#progress-bar", ProgressBar)
-        progress_info = self.query_one("#progress-info", Label)
-        
-        if progress.video_title != self._current_video:
-            self._current_video = progress.video_title
-            video_label.update(f"🎬 {progress.video_title}")
-        
-        progress_bar.progress = progress.percent
+        """Update the progress display for a specific video."""
+        video_id = progress.video_title # Using title as ID for now
+        active_container = self.query_one("#active-downloads", VerticalScroll)
+
+        if video_id not in self._active_downloads:
+            # Create new progress widget for this video
+            new_widget = Vertical(classes="video-progress-item", id=f"dl-{hash(video_id)}")
+            new_widget.mount(Label(f"🎬 {progress.video_title}", classes="video-title"))
+            new_widget.mount(ProgressBar(total=100, show_eta=False))
+            new_widget.mount(Label("Starting...", classes="video-info"))
+            active_container.mount(new_widget)
+            self._active_downloads[video_id] = new_widget
+            active_container.scroll_to_widget(new_widget)
+
+        widget = self._active_downloads[video_id]
+        pbar = widget.query_one(ProgressBar)
+        info = widget.query_one(".video-info", Label)
+
+        pbar.progress = progress.percent
         
         if progress.status == "downloading":
             info_parts = [f"{progress.percent:.1f}%"]
@@ -130,11 +151,23 @@ class DownloadScreen(Screen):
                 info_parts.append(progress.speed)
             if progress.eta:
                 info_parts.append(f"ETA: {progress.eta}")
-            progress_info.update(" • ".join(info_parts))
+            info.update(" • ".join(info_parts))
         elif progress.status == "processing":
-            progress_info.update("Processing...")
+            info.update("Processing...")
         elif progress.status == "starting":
-            progress_info.update("Starting download...")
+            info.update("Starting download...")
+
+    def update_total_progress(self, current: int, total: int) -> None:
+        """Update the total queue progress."""
+        self._total_videos = total
+        self._videos_downloaded = current
+        
+        total_bar = self.query_one("#total-progress-bar", ProgressBar)
+        total_info = self.query_one("#total-info", Label)
+        
+        if total > 0:
+            total_bar.progress = (current / total) * 100
+        total_info.update(f"{current}/{total} videos downloaded")
 
     def log_message(self, message: str, level: str = "info") -> None:
         """Add a message to the download log."""
@@ -149,20 +182,30 @@ class DownloadScreen(Screen):
 
     def on_download_complete(self, video_title: str) -> None:
         """Handle completed download."""
+        if video_title in self._active_downloads:
+            widget = self._active_downloads.pop(video_title)
+            widget.remove()
+        
         self._videos_downloaded += 1
         self.log_message(f"✅ Downloaded: {video_title}", "success")
+        self.update_total_progress(self._videos_downloaded, self._total_videos)
 
     def on_download_error(self, video_title: str, error: str) -> None:
         """Handle download error."""
+        if video_title in self._active_downloads:
+            widget = self._active_downloads.pop(video_title)
+            widget.remove()
+            
+        self._videos_downloaded += 1 # Still counted as processed
         self.log_message(f"❌ Failed: {video_title} - {error}", "error")
+        self.update_total_progress(self._videos_downloaded, self._total_videos)
 
     def on_queue_complete(self) -> None:
         """Handle when all downloads are done."""
+        title_label = self.query_one("#total-title", Label)
+        title_label.update("✓ Queue Complete!")
+        
         self.log_message(
-            f"🎉 All done! Downloaded {self._videos_downloaded} videos",
+            f"🎉 All done! Processed {self._total_videos} videos",
             "success",
         )
-        video_label = self.query_one("#current-video", Label)
-        video_label.update("✓ All videos downloaded!")
-        progress_info = self.query_one("#progress-info", Label)
-        progress_info.update("Press 'Stop & Exit' to close")

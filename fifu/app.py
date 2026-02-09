@@ -135,7 +135,7 @@ class FifuApp(App):
         self._download_task = asyncio.create_task(self._download_loop(channel))
 
     async def _download_loop(self, channel: ChannelInfo) -> None:
-        """Main download loop."""
+        """Main download loop with concurrency."""
         download_screen = self.screen
         if not isinstance(download_screen, DownloadScreen):
             return
@@ -169,37 +169,53 @@ class FifuApp(App):
         
         downloaded_titles = self.download_service.get_downloaded_videos(output_dir)
         
-        for video in videos:
-            if self._stop_downloads:
-                download_screen.log_message("⏹ Download stopped by user", "info")
-                break
-            
-            if video.title in downloaded_titles:
-                download_screen.log_message(f"⏭ Skipping (already downloaded): {video.title}", "info")
-                continue
-            
-            download_screen.log_message(f"⬇ Starting: {video.title}", "info")
-            
-            video_url = f"https://www.youtube.com/watch?v={video.id}"
-            
-            def progress_callback(progress: DownloadProgress):
-                self.call_from_thread(download_screen.update_progress, progress)
-            
-            quality = self._download_quality
-            result = await asyncio.get_event_loop().run_in_executor(
-                None,
-                lambda: self.download_service.download_video(
-                    video_url, output_dir, progress_callback, quality
-                )
-            )
-            
-            if result.success:
-                download_screen.on_download_complete(result.video_title)
-            else:
-                download_screen.on_download_error(
-                    result.video_title, result.error or "Unknown error"
-                )
+        # Filter out already downloaded
+        to_download = [v for v in videos if v.title not in downloaded_titles]
+        skipped = len(videos) - len(to_download)
+        if skipped:
+            download_screen.log_message(f"⏭ Skipping {skipped} already downloaded videos")
         
+        download_screen.update_total_progress(0, len(to_download))
+        
+        if not to_download:
+            download_screen.on_queue_complete()
+            return
+
+        # Use Semaphore to limit concurrency
+        semaphore = asyncio.Semaphore(3)
+        tasks = []
+
+        async def download_task(video: VideoInfo, index: int):
+            async with semaphore:
+                if self._stop_downloads:
+                    return
+
+                video_url = f"https://www.youtube.com/watch?v={video.id}"
+                
+                def progress_callback(progress: DownloadProgress):
+                    self.call_from_thread(download_screen.update_progress, progress)
+                
+                quality = self._download_quality
+                result = await asyncio.get_event_loop().run_in_executor(
+                    None,
+                    lambda: self.download_service.download_video(
+                        video_url, output_dir, progress_callback, quality
+                    )
+                )
+                
+                if result.success:
+                    self.call_from_thread(download_screen.on_download_complete, result.video_title)
+                else:
+                    self.call_from_thread(
+                        download_screen.on_download_error, 
+                        result.video_title, 
+                        result.error or "Unknown error"
+                    )
+
+        for i, video in enumerate(to_download):
+            tasks.append(asyncio.create_task(download_task(video, i)))
+
+        await asyncio.gather(*tasks)
         download_screen.on_queue_complete()
 
     def stop_downloads(self) -> None:

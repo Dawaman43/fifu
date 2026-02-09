@@ -41,8 +41,7 @@ class DownloadService:
     """Service for downloading YouTube videos."""
 
     def __init__(self):
-        self._progress_callback: Optional[Callable[[DownloadProgress], None]] = None
-        self._current_title = ""
+        pass
 
     def get_download_path(self, channel_name: str) -> Path:
         """Get the download path for a channel."""
@@ -57,31 +56,6 @@ class DownloadService:
         safe = safe.strip('. ')
         return safe or "unknown_channel"
 
-    def _progress_hook(self, d: dict):
-        """Hook called by yt-dlp during download."""
-        if self._progress_callback:
-            status = d.get("status", "unknown")
-            
-            if status == "downloading":
-                downloaded = d.get("downloaded_bytes", 0)
-                total = d.get("total_bytes") or d.get("total_bytes_estimate", 0)
-                percent = (downloaded / total * 100) if total > 0 else 0
-                
-                self._progress_callback(DownloadProgress(
-                    video_title=self._current_title,
-                    status="downloading",
-                    downloaded_bytes=downloaded,
-                    total_bytes=total,
-                    speed=d.get("_speed_str", ""),
-                    eta=d.get("_eta_str", ""),
-                    percent=percent,
-                ))
-            elif status == "finished":
-                self._progress_callback(DownloadProgress(
-                    video_title=self._current_title,
-                    status="processing",
-                    percent=100.0,
-                ))
 
     def download_video(
         self,
@@ -89,10 +63,35 @@ class DownloadService:
         output_dir: Path,
         progress_callback: Optional[Callable[[DownloadProgress], None]] = None,
         quality: str = "best",
+        video_id: str = "unknown"
     ) -> DownloadResult:
         """Download a single video with specified quality."""
-        self._progress_callback = progress_callback
-        
+        current_title = "Loading..."
+
+        def progress_hook(d: dict):
+            if progress_callback:
+                status = d.get("status", "unknown")
+                if status == "downloading":
+                    downloaded = d.get("downloaded_bytes", 0)
+                    total = d.get("total_bytes") or d.get("total_bytes_estimate", 0)
+                    percent = (downloaded / total * 100) if total > 0 else 0
+                    
+                    progress_callback(DownloadProgress(
+                        video_title=current_title,
+                        status="downloading",
+                        downloaded_bytes=downloaded,
+                        total_bytes=total,
+                        speed=d.get("_speed_str", ""),
+                        eta=d.get("_eta_str", ""),
+                        percent=percent,
+                    ))
+                elif status == "finished":
+                    progress_callback(DownloadProgress(
+                        video_title=current_title,
+                        status="processing",
+                        percent=100.0,
+                    ))
+
         output_template = str(output_dir / "%(title)s.%(ext)s")
         
         if quality == "best":
@@ -105,7 +104,7 @@ class DownloadService:
         ydl_opts = {
             "format": format_str,
             "outtmpl": output_template,
-            "progress_hooks": [self._progress_hook],
+            "progress_hooks": [progress_hook],
             "quiet": True,
             "no_warnings": True,
             "merge_output_format": "mp4",
@@ -115,11 +114,12 @@ class DownloadService:
             try:
                 info = ydl.extract_info(video_url, download=False)
                 if info:
-                    self._current_title = info.get("title", "Unknown")
+                    nonlocal current_title
+                    current_title = info.get("title", "Unknown")
                     
                     if progress_callback:
                         progress_callback(DownloadProgress(
-                            video_title=self._current_title,
+                            video_title=current_title,
                             status="starting",
                             percent=0.0,
                         ))
@@ -136,13 +136,13 @@ class DownloadService:
                     
                     return DownloadResult(
                         success=True,
-                        video_title=self._current_title,
+                        video_title=current_title,
                         file_path=file_path if file_path.exists() else None,
                     )
             except Exception as e:
                 return DownloadResult(
                     success=False,
-                    video_title=self._current_title,
+                    video_title=current_title,
                     error=str(e),
                 )
         
