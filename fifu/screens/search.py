@@ -155,7 +155,9 @@ class SearchScreen(Screen):
         
         history_list.clear()
         for item in self.app.config_service.get_history():
-            history_list.append(ListItem(Label(item), id=f"hist-{item}"))
+            li = ListItem(Label(item))
+            li.history_query = item  # Store original query safely
+            history_list.append(li)
             
         fav_list.clear()
         for fav in self.app.config_service.get_favorites():
@@ -176,13 +178,13 @@ class SearchScreen(Screen):
 
     def on_list_view_selected(self, event: ListView.Selected) -> None:
         """Handle selection in history or favorites."""
-        item_id = event.item.id or ""
-        if item_id.startswith("hist-"):
-            query = item_id[5:]
+        item = event.item
+        if hasattr(item, "history_query"):
+            query = item.history_query
             self.query_one("#search-input", Input).value = query
             self._do_search()
-        elif item_id.startswith("fav-"):
-            channel_id = item_id[4:]
+        elif item.id and item.id.startswith("fav-"):
+            channel_id = item.id[4:]
             favorites = self.app.config_service.get_favorites()
             fav = next((f for f in favorites if f["id"] == channel_id), None)
             if fav:
