@@ -2,6 +2,7 @@
 
 import re
 from dataclasses import dataclass, field
+import logging
 from pathlib import Path
 from typing import Callable, Optional
 import yt_dlp
@@ -41,7 +42,14 @@ class DownloadService:
     """Service for downloading YouTube videos."""
 
     def __init__(self):
-        pass
+        self.log_file = Path.home() / ".config" / "fifu" / "downloader.log"
+        self.log_file.parent.mkdir(parents=True, exist_ok=True)
+        logging.basicConfig(
+            filename=str(self.log_file),
+            level=logging.DEBUG,
+            format="%(asctime)s - %(levelname)s - %(message)s",
+        )
+        logging.info("Downloader service initialized")
 
     def get_download_path(self, channel_name: str) -> Path:
         """Get the download path for a channel."""
@@ -106,21 +114,16 @@ class DownloadService:
             "format": format_str,
             "outtmpl": output_template,
             "progress_hooks": [progress_hook],
-            "quiet": True,
-            "no_warnings": True,
+            "quiet": False,  # Turn off quiet to see errors in log
+            "no_warnings": False,
             "merge_output_format": "mp4",
         }
 
         if subtitles:
             ydl_opts.update({
                 "writesubtitles": True,
-                "allsubtitles": False,  # Changed to False to allow specifics
                 "subtitleslangs": ["en.*", ".*"],
                 "embedsubs": True,
-                "postprocessors": [{
-                    "key": "FFmpegEmbedSubtitle",
-                    "already_have_subtitle": False,
-                }],
             })
         
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
@@ -136,7 +139,9 @@ class DownloadService:
                             percent=0.0,
                         ))
                     
+                    logging.info(f"Starting download: {current_title} ({video_url})")
                     ydl.download([video_url])
+                    logging.info(f"Download finished: {current_title}")
                     
                     filename = ydl.prepare_filename(info)
                     file_path = Path(filename)
@@ -152,6 +157,7 @@ class DownloadService:
                         file_path=file_path if file_path.exists() else None,
                     )
             except Exception as e:
+                logging.error(f"Download failed for {video_url}: {str(e)}")
                 return DownloadResult(
                     success=False,
                     video_title=current_title,
