@@ -226,3 +226,21 @@ class YouTubeService:
             except Exception:
                 pass
         return None
+
+    def get_playlist_metadata(self, playlist_url: str) -> Optional[tuple[str, str]]:
+        """Fetch metadata (title, uploader) for a playlist URL."""
+        opts = {
+            "quiet": True,
+            "no_warnings": True,
+            "extract_flat": True,
+        }
+        with yt_dlp.YoutubeDL(opts) as ydl:
+            try:
+                info = ydl.extract_info(playlist_url, download=False)
+                if info:
+                    title = info.get("title", "Unknown Playlist")
+                    uploader = info.get("uploader", info.get("channel", "YouTube"))
+                    return title, uploader
+            except Exception:
+                pass
+        return None

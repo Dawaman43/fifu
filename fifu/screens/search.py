@@ -69,12 +69,12 @@ class SearchScreen(Screen):
         with Container(id="search-container"):
             with Vertical(id="search-box"):
                 yield Label("🎬 FIFU", id="search-title")
-                yield Label("YouTube Channel Video Downloader", id="search-subtitle")
+                yield Label("YouTube Channel or Playlist Downloader", id="search-subtitle")
                 yield Input(
-                    placeholder="Enter channel name...",
+                    placeholder="Enter channel name or paste playlist URL...",
                     id="search-input",
                 )
-                yield Button("Search Channels", id="search-button", variant="primary")
+                yield Button("Search / Process URL", id="search-button", variant="primary")
                 yield Label("", id="search-status")
 
     def on_mount(self) -> None:

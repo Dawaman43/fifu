@@ -63,6 +63,11 @@ class FifuApp(App):
             return
         
         current_screen.show_searching()
+
+        # Check for direct URL
+        if query.startswith(("http://", "https://", "www.youtube.com", "youtube.com")):
+            await self._handle_direct_url(query)
+            return
         
         channels = await asyncio.get_event_loop().run_in_executor(
             None, self.youtube_service.search_channels, query
@@ -73,6 +78,30 @@ class FifuApp(App):
             return
         
         self.push_screen(ChannelsScreen(channels, query))
+
+    async def _handle_direct_url(self, url: str) -> None:
+        """Handle direct playlist/video URL."""
+        current_screen = self.screen
+        if not isinstance(current_screen, SearchScreen):
+            return
+
+        metadata = await asyncio.get_event_loop().run_in_executor(
+            None, self.youtube_service.get_playlist_metadata, url
+        )
+
+        if metadata:
+            title, uploader = metadata
+            channel = ChannelInfo(
+                id="direct_url",
+                name=title,
+                url=url, # Use original URL
+                description=f"Direct URL from: {uploader}"
+            )
+            self._current_channel = channel
+            self._playlist_url = url
+            self.push_screen(OptionsScreen(channel, [])) # No other playlists to select
+        else:
+            current_screen.show_error("Invalid URL or couldn't fetch metadata.")
 
     def select_channel(self, channel: ChannelInfo) -> None:
         """Handle channel selection - show options screen."""
