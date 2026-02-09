@@ -1,5 +1,6 @@
 """Download screen showing progress and queue."""
 
+import asyncio
 from textual.app import ComposeResult
 from textual.containers import Container, Vertical, VerticalScroll
 from textual.screen import Screen

@@ -44,20 +44,27 @@ class FifuApp(App):
         CSS_PATH = Path(__file__).parent / "styles" / "app.tcss"
     
     BINDINGS = [
-        Binding("q", "quit", "Quit", show=True),
-        Binding("escape", "go_back", "Back", show=True),
+        Binding("q", "quit", "Quit", show=True, priority=True),
+        Binding("escape", "go_back", "Back", show=True, priority=True),
     ]
 
     async def action_quit(self) -> None:
-        """Override quit to ensure clean shutdown of downloads."""
+        """Handle quit action with comprehensive cleanup and robust exit."""
         self.stop_downloads()
+        self.youtube_service.shutdown()
+        
         # Shutdown executor and cancel pending futures
         self._download_executor.shutdown(wait=False, cancel_futures=True)
-        # Give a tiny bit of time for threads to receive the signal
+        
+        # Cancel the main download loop task
+        if self._download_task:
+            self._download_task.cancel()
+        
+        # Give a tiny bit of time for tasks/threads to receive the signal
         await asyncio.sleep(0.1)
         
-        # If we are in the middle of a messy state, force exit to avoid terminal leak
-        os._exit(0)
+        # Graceful exit to allow Textual to restore terminal state
+        self.exit()
 
     def __init__(self):
         super().__init__()
@@ -77,20 +84,6 @@ class FifuApp(App):
         """Initialize the application."""
         self.push_screen(SearchScreen())
 
-    async def action_quit(self) -> None:
-        """Handle quit action with cleanup."""
-        self.stop_downloads()
-        self.youtube_service.shutdown()
-        
-        # Cancel any pending asyncio tasks
-        if self._download_task:
-            self._download_task.cancel()
-            try:
-                await self._download_task
-            except asyncio.CancelledError:
-                pass
-        
-        await super().action_quit()
 
     def action_go_back(self) -> None:
         """Go back to the previous screen."""

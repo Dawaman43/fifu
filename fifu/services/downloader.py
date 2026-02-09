@@ -128,7 +128,8 @@ class DownloadService:
         output_template = str(output_dir / "%(title)s.%(ext)s")
         
         if quality == "best":
-            format_str = "bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best"
+            # Prefer mp4 for compatibility but allow other high quality formats for merging
+            format_str = "bestvideo+bestaudio/best"
         elif quality == "bestaudio/best":
             format_str = "bestaudio/best"
         else:
@@ -145,6 +146,7 @@ class DownloadService:
         ydl_opts = {
             "format": format_str,
             "outtmpl": output_template,
+            "paths": {"temp": str(output_dir / ".fifu_tmp")},
             "progress_hooks": [progress_hook],
             "quiet": True,
             "no_warnings": True,
@@ -152,6 +154,7 @@ class DownloadService:
             "logger": YDLogger(),
             "noprogress": False,
             "nooverwrites": True,
+            "ffmpeg_location": "/usr/bin/ffmpeg",
         }
 
         if self.is_aria2_available():
