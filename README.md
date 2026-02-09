@@ -1,123 +1,104 @@
-# Fifu
+# 🎬 Fifu
 
-A cross-platform TUI for downloading YouTube videos from channels.
+**The Ultra-Fast, Cross-Platform TUI for Downloading YouTube Channel Content.**
 
-![Python](https://img.shields.io/badge/Python-3.10+-blue)
-![Textual](https://img.shields.io/badge/TUI-Textual-green)
-![yt-dlp](https://img.shields.io/badge/Download-yt--dlp-red)
+[![Build Status](https://github.com/Dawaman43/fifu/actions/workflows/publish.yml/badge.svg)](https://github.com/Dawaman43/fifu/actions)
+[![PyPI version](https://badge.fury.io/py/fifu.svg)](https://badge.fury.io/py/fifu)
+[![AUR version](https://img.shields.io/aur/version/fifu)](https://aur.archlinux.org/packages/fifu)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
 
-## Features
+Fifu (Fetch It For Us) is a high-performance Terminal User Interface (TUI) designed for power users who want to download entire YouTube channels or playlists with zero friction. Built with **Textual** and powered by **yt-dlp**.
 
-- 🔍 **Search YouTube channels** - Find channels by name
-- 📊 **Sorted by subscribers** - Most popular channels shown first
-- 📄 **Pagination** - Browse through all search results
-- ⚙️ **Quality selection** - Choose 1080p, 720p, 480p, or audio only
-- 🔢 **Video count** - Download all or a specific number of videos
-- 📋 **Playlist support** - Download from channel playlists
-- ⬇️ **Auto-download** - Continuously downloads latest videos
-- 💾 **Organized storage** - Saves to `~/Downloads/videos/{channelname}/`
+---
 
-## Installation
+## ✨ Key Features
 
-### Standalone Binaries & Native Packages (Recommended)
+- 🚀 **Asynchronous Performance** - Multi-threaded metadata fetching and concurrent downloads (3 at a time).
+- 🔍 **Smart Search** - Find any channel instantly, sorted by popularity (subscriber count).
+- 📋 **Playlist Intelligence** - Direct support for downloading entire playlists or specific channel sections.
+- ⚙️ **Custom Quality Profiles** - 1080p, 720p, 480p, or high-fidelity Audio (MP3/M4A).
+- 💬 **Subtitle Support** - Automatically download and embed subtitles into your videos.
+- 💾 **Safe History & Favorites** - One-click access to your most-visited channels.
+- 🏁 **Graceful UX** - Beautiful progress bars, keyboard-first navigation, and instant shutdown.
 
-You can download the latest standalone binaries and native Linux packages from the **[Releases](https://github.com/Dawaman43/fifu/releases)** page.
+---
 
-### Package Managers
+## 🚀 Quick Start
 
-If you have Python 3.10+ installed, you can use:
+The fastest way to install Fifu on any system is using **pipx**:
+
+```bash
+pipx install git+https://github.com/Dawaman43/fifu.git
+```
+
+---
+
+## 📦 Installation Options
+
+### 🐧 Linux
 
 #### Arch Linux (AUR)
-
-If you are on Arch Linux, you can install via any AUR helper:
 
 ```bash
 yay -S fifu
 ```
 
-#### PyPI
+#### Debian / Ubuntu / Mint
+
+Download the latest `.deb` from [Releases](https://github.com/Dawaman43/fifu/releases) and run:
 
 ```bash
-pip install fifu
+sudo dpkg -i fifu.deb
 ```
 
-#### npm
+#### Fedora / RHEL
+
+Download the latest `.rpm` from [Releases](https://github.com/Dawaman43/fifu/releases) and run:
 
 ```bash
-npm install -g fifu-tui
+sudo rpm -i fifu.rpm
 ```
 
-#### Linux Distributions:
+### 🪟 Windows
 
-- **Mint / Ubuntu / Debian**: Download and install the `.deb` package.
-  ```bash
-  sudo dpkg -i fifu.deb
-  ```
-- **Fedora / RHEL**: Download and install the `.rpm` package.
-  ```bash
-  sudo rpm -i fifu.rpm
-  ```
-- **Arch / Generic Linux**: Download the `.tar.gz`, extract it, and run the `fifu` binary.
-  ```bash
-  tar -xzvf fifu-linux-x64.tar.gz
-  ./fifu
-  ```
+1. Download `fifu-win.exe` from [Releases](https://github.com/Dawaman43/fifu/releases).
+2. Run it from your terminal or double-click to start.
 
-#### Windows:
-
-- Download the `fifu-win.exe` and run it.
-
-#### macOS:
-
-- Download the `fifu-macos`, make it executable, and run it.
-  ```bash
-  chmod +x fifu-macos
-  ./fifu-macos
-  ```
-
-### From Source
+### 🍎 macOS
 
 ```bash
-cd /path/to/fifu
-python -m venv .venv
-source .venv/bin/activate
-pip install -e .
+curl -L -o fifu https://github.com/Dawaman43/fifu/releases/latest/download/fifu-macos
+chmod +x fifu
+./fifu
 ```
 
-## Usage
+---
 
-```bash
-fifu
-```
+## ⌨️ Controls
 
-### Workflow
+| Key             | Action                     |
+| :-------------- | :------------------------- |
+| `Enter`         | Select / Confirm / Start   |
+| `f`             | Toggle Channel as Favorite |
+| `PageUp / Down` | Navigate search results    |
+| `Escape`        | Go back                    |
+| `q`             | Quit Safely                |
 
-1. **Search** - Enter a channel name
-2. **Select** - Choose a channel from results (sorted by subscribers)
-3. **Configure** - Set video count, quality, and optionally select a playlist
-4. **Download** - Watch videos download automatically
+---
 
-### Controls
+## 🛠️ Tech Stack
 
-| Key           | Action           |
-| ------------- | ---------------- |
-| `Enter`       | Select / Confirm |
-| `PageUp/Down` | Navigate pages   |
-| `Escape`      | Go back          |
-| `q`           | Quit             |
+- **[Textual](https://textual.textualize.io/)** - Stunning TUI framework.
+- **[yt-dlp](https://github.com/yt-dlp/yt-dlp)** - The industry standard for video extraction.
+- **[Asyncio](https://docs.python.org/3/library/asyncio.html)** - Powering concurrent downloads.
 
-## Screenshots
+---
 
-```
-┌─────────────────────────────────────────────┐
-│              🎬 FIFU                        │
-│    YouTube Channel Video Downloader         │
-│                                             │
-│    Enter channel name...                    │
-│    [Search Channels]                        │
-└─────────────────────────────────────────────┘
-```
+## 📜 License
 
-## License
+Fifu is released under the **MIT License**. See [LICENSE](LICENSE) for details.
 
-MIT
+---
+
+_Made with ❤️ by [Dawaman43](https://github.com/Dawaman43)_
