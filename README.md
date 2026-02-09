@@ -3,7 +3,8 @@
 **The Ultra-Fast, Cross-Platform TUI for Downloading YouTube Channel Content.**
 
 [![Build Status](https://github.com/Dawaman43/fifu/actions/workflows/publish.yml/badge.svg)](https://github.com/Dawaman43/fifu/actions)
-[![PyPI version](https://badge.fury.io/py/fifu.svg)](https://badge.fury.io/py/fifu)
+[![PyPI version](https://badge.fury.io/py/fifu.svg)](https://pypi.org/project/fifu/)
+[![npm version](https://badge.fury.io/js/fifu-tui.svg)](https://www.npmjs.com/package/fifu-tui)
 [![AUR version](https://img.shields.io/aur/version/fifu)](https://aur.archlinux.org/packages/fifu)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
